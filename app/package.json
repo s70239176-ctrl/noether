@@ -1,0 +1,26 @@
+{
+  "name": "noether-observatory",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Live observatory and operator console for Noether",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs --dev",
+    "build": "vite build",
+    "start": "node server.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "viem": "2.57.16"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "typescript": "5.6.3",
+    "vite": "5.4.11"
+  }
+}

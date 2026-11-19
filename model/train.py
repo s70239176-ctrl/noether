@@ -219,6 +219,16 @@ def main() -> None:
         "golden": {"x": golden_x.tolist(), "logit": golden_z.tolist()},
     }
     (ROOT / "model" / "model_card.json").write_text(json.dumps(card, indent=2), encoding="utf-8")
+    # Same quantised weights for the frontend's live scorer panel (identical integer forward pass).
+    weights = {
+        "scale": SCALE,
+        "escalateLogit": metrics["logit_threshold_1e6"],
+        "w1": q["w1"].tolist(),
+        "b1": q["b1"].tolist(),
+        "w2": q["w2"].tolist(),
+        "b2": q["b2"],
+    }
+    (ROOT / "model" / "weights.json").write_text(json.dumps(weights), encoding="utf-8")
     print(json.dumps(metrics, indent=2))
 
 

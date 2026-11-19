@@ -8,3 +8,7 @@ deployments/evidence.md
 model/__pycache__/
 node_modules/
 deployments/deploy.log
+app/node_modules/
+app/dist/
+.claude/
+app/.probe.local.mjs

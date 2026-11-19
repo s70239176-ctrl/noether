@@ -69,3 +69,19 @@ Policies paid automatically for this incident: **0**. Policies excluded in range
 ### Reading the timestamps
 
 Each chain keeps its own clock at about 1 s granularity, so Lasna's block can carry a timestamp one second "before" the origin block it reacted to. The "+s" column measures each destination block's timestamp against the origin block's timestamp. In scenario 1 the callback count is 4: Base guard, cover, Unichain guard, and the attacker's quarantine. In scenario 2 it is 3, because a home-side recipient isn't quarantined on the synthetic token. In scenario 2 the payout was 0 ETH: the three test policies had already been paid out in scenario 1.
+
+## Run 3: from the Observatory UI, 2026-11-19 ~20:13 UTC (testnet delivery stall)
+
+Every step was clicked in the Observatory's operator console: **Resolve**, then **Bridge 1,000 dUSD**, then **Forge a 1,000,000 mint**.
+
+- Honest transfer: [dispatch](https://sepolia.basescan.org/tx/0xf1b9e9106b2496017045be631635825dea2bd6c24187f42b63b3da98bb7907cd) on Base, [delivery](https://sepolia.uniscan.xyz/tx/0x6eafcb14fc22b22e8478dc65678409fde0e36c280ecbcad2c260f7eb66d814fc) on Unichain, matched by the ledger, mode stayed NORMAL.
+- Forged mint accepted by the Unichain Mailbox: [0x318b23…503726](https://sepolia.uniscan.xyz/tx/0x318b23cd9200224b2884c643a9b4c2e09cab200347fc08f9f07983d658503726).
+- **Noether reacted in the same second**: `NEURAL_ESCALATION` (p ≈ 99.75%), 4 callbacks requested, taint subscription opened ([Lasna tx](https://lasna.reactscan.net/tx/0x3613854c9b765d715d6aa589ec40706cb22c9e9266d498fb3ea2da9466ec9073)).
+- **Callback delivery stalled network-wide**: Reactive's testnet delivery account (`0xF7E866D726658F6C3F14B8EE537fe268a4D91DDb`) sent no transactions on Base or Unichain for several minutes (nonce stuck at 6939 on Base), while our ledger had REACT and no debt and our guards had ETH and no proxy debt. When delivery resumed, all four callbacks landed together at 20:38:59 UTC, **1,509 s after the reaction**:
+  - [Unichain route frozen](https://sepolia.uniscan.xyz/tx/0x98949a4b4fda7598adcf86e1cdd3c111e40f57a0fe0ce75e070db61717823fa9)
+  - [Base route frozen](https://sepolia.basescan.org/tx/0x08e42a0031aafca18d32fe202c6a2f72d66b85db7560b6fe243a1a5f3bd35890)
+  - [cover sales closed, payout opened](https://sepolia.basescan.org/tx/0x2b32e6cef2c729b3795c8dd2f0ec284f8f89d1998ac450a8b47d5e3faaf0efad)
+  - [attacker quarantined](https://sepolia.uniscan.xyz/tx/0x56c487ab77f2c522c61875de8e1f3e7e61ddbf783d688127b92b4bc7c3ac9d2a)
+- During the stall, a front-runner bought cover (policy #4, [0xecaf74…adbfc1](https://sepolia.basescan.org/tx/0xecaf74214c29311bf0e8d7cf3c98317f626f7fee38319076ca0801e4d6adbfc1)) before the hold landed. Eligibility is decided by the forged mint's origin timestamp, and the self-continuing payout loop later settled it as **excluded** (`PolicyExcluded`, then `PayoutCompleted`): [0x5ff700…72d0](https://sepolia.basescan.org/tx/0x5ff700b31231e57392586926388f6dc493889642ee33b0e07a57f49333f272d0). The second layer of the front-running defence, proven live.
+
+Takeaway: Noether's decision is made inside one reactive transaction in the same second. End-to-end time-to-freeze also includes Reactive's callback delivery, which was 1–2 s in runs 1 and 2 and 25 minutes during this testnet stall. The Observatory shows "callbacks landed n / 4" and a live wait timer, so a stall is visible instead of hidden.

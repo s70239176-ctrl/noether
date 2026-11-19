@@ -1,5 +1,9 @@
 # Noether
 
+**Reactive Omni Buildathon 2026** · Tracks: *Every Second Counts* and *Reactive Meets AI* · Live observatory: [`app/`](app/) · Evidence: [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md) · Code: [github.com/s70239176-ctrl/noether](https://github.com/s70239176-ctrl/noether)
+
+![Noether Observatory: live map of Base Sepolia, Reactive Lasna and Unichain Sepolia](docs/assets/observatory.png)
+
 **A conservation law for a real Hyperlane Warp Route, enforced by Reactive Omni.**
 
 > Every token message delivered on one chain was dispatched, exactly once, on the other.
@@ -64,6 +68,27 @@ The test harness ([test/utils/NoetherHarness.sol](test/utils/NoetherHarness.sol)
 - **Callback proxy:** it delivers callbacks with the sender address injected into the first argument.
 
 ---
+
+## The Observatory: run the whole idea live
+
+[`app/`](app/) is a live frontend for the deployed system. It reads Base Sepolia, Unichain Sepolia and Reactive Lasna directly and, in operator mode, drives every scenario on the real testnets.
+
+| Panel | What it shows, live |
+|---|---|
+| **The law** | `circulating ≤ escrowed`, rebuilt by the Lasna ledger from both chains; turns into a glitching `≰` on a breach |
+| **Live map** | Base, Lasna and Unichain as bodies. Hyperlane messages travel the warp-route arc, logs stream into Noether, callbacks fire back as red bolts, and frozen routes get a hexagonal cage |
+| **Response ladder** | which rung the ledger is on, whether `Cron1` is currently subscribed, open suspects, live taint subscriptions |
+| **Operator console** | one-click *honest transfer*, *forged mint*, *collateral drain*, *copycat* and *governance resolve*, streamed step by step with explorer links |
+| **Incident dossier** | the latest violation as a timeline (origin tx → Lasna reaction → each freeze landing → payout), seconds taken from on-chain timestamps, and callbacks landed vs requested |
+| **Neural scorer** | the 6-8-1 network with the exact on-chain weights; drag the six features and see the same integer forward pass `react()` runs |
+| **Cover · economy** | sales open / paused / closed, capital, payouts and exclusions, ledger REACT balance, operator wallet |
+| **Seismograph** | every event on all three chains over the last 30 minutes, each one linking to its transaction |
+
+```bash
+cd app && npm ci && npm run dev     # http://127.0.0.1:5173
+```
+
+**Operator mode** is on when `../.env` holds the deployer key. The key stays in the local server process and never reaches the browser; actions need a same-origin request, and only one runs at a time. **Watch-only mode** (`NOETHER_OPERATOR=0`, or no key) shows everything except the buttons, which is the safe way to host it publicly. `npm run build && npm start` serves the production build.
 
 ## How it works
 
@@ -166,6 +191,15 @@ bash script/demo.sh resolve   # governance resets everything
 
 Every destination event records the **origin** tx hash and timestamp next to its own `block.timestamp`, so the latency in the evidence table comes from chain data.
 
+## Alignment with the judging criteria
+
+| Criterion | Evidence |
+|---|---|
+| **Execution** | Live on Base Sepolia, Unichain Sepolia and Lasna; reactive transactions and the callbacks they trigger are linked in [Live evidence](#live-evidence) and reproducible from the Observatory or `script/demo.sh` |
+| **Integration** | Without Reactive there is no product: one subscriber has to see both chains' Hyperlane events, keep the ledger, and fan out freezes. Dynamic subscriptions (cron clock, taint) are created and dropped inside `react()` |
+| **Usefulness** | Targets the failure mode behind the largest bridge losses (unbacked mints and releases), on Hyperlane's own production contracts, without trusting the bridge's verifier |
+| **Craft** | 31 Foundry tests on real Hyperlane contracts, a gas cap test, bit-exact model tests, a local dress rehearsal, a live frontend, and docs that separate what's real from what's simulated |
+
 ## Live evidence
 
 Recorded 2026-11-19 and rebuilt from raw chain logs by `script/evidence.mjs`. Full record with every address: [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md).
@@ -192,6 +226,16 @@ Each chain keeps its own ~1 s clock, so Lasna's block can carry a timestamp a se
 
 ---
 
+## What's real and what's simulated
+
+| Real | Simulated or demo-only |
+|---|---|
+| Hyperlane Mailboxes on Base Sepolia and Unichain Sepolia (Hyperlane's deployments) | The collateral token `DemoUSD` is a faucet token; any ERC-20 works |
+| `HypERC20Collateral`, `HypERC20`, `TrustedRelayerIsm`, `MerkleTreeHook` from `@hyperlane-xyz/core@12.2.0` | The "compromised relayer key" is the deployer's own key, which the route trusts by design |
+| Reactive Lasna system contract, cron, callback proxies; every reaction and callback is an on-chain transaction | The honest relay is done by the demo (`Mailbox.process` with the dispatched bytes), not by Hyperlane's hosted relayer |
+| Neural scorer weights and arithmetic (bit-exact with the training script) | The scorer's training data is synthetic |
+| Cover pool, payouts and exclusions on Base Sepolia | Cover capital and the three seeded policies are test ETH from the deployer |
+
 ## Assumptions and limits
 
 - **The route is ours; Hyperlane's contracts and Mailboxes are real.** Noether integrates with any warp route whose owner installs `NoetherIsm` as the route's ISM. The synthetic token's one extra hook (quarantine, no bridging out while frozen) is the only Hyperlane-side change.
@@ -202,6 +246,7 @@ Each chain keeps its own ~1 s clock, so Lasna's block can carry a timestamp a se
   - Cron events still come from the legacy `0x…fffFfF`.
   - Callback proxies: Base Sepolia `0x476F…3585`, Unichain Sepolia `0x775c…66C1`.
   - Callbacks below 100k gas are ignored.
+- **Time-to-freeze includes Reactive's callback delivery.** Noether decides inside one reactive transaction in the same second as the forged event. Delivery to the destination chains took 1–2 s in runs 1 and 2, but during a network-wide Reactive testnet delivery stall on 2026-11-19 it took 25 minutes ([run 3](docs/LIVE_EVIDENCE.md)). The Observatory shows callbacks landed vs requested with a live wait timer.
 - **A forged mint can't be un-minted.** Noether stops further deliveries, bridging out and the accounts involved, and traces hops made before the quarantine lands. A DEX sale inside that ~2 s window is out of scope.
 - **Router initialization is a separate transaction** from deployment (standard for Hyperlane routers deployed without a proxy); fine on testnet, use a proxy and atomic init in production.
 - **Governance (`guardian`) is one address** in the demo; use a multisig in production.
@@ -209,6 +254,7 @@ Each chain keeps its own ~1 s clock, so Lasna's block can carry a timestamp a se
 ## Repository map
 
 ```
+app/                               the Observatory: live frontend + local operator server
 src/reactive/NoetherLedger.sol     the reactive contract (Lasna)
 src/reactive/NoetherBrain*.sol     on-chain neural scorer + generated weights
 src/hyperlane/NoetherIsm.sol       Noether's guard, installed as the warp route's ISM
@@ -221,3 +267,18 @@ model/                             training script and model card
 script/                            deploy scripts, deploy/demo/rehearse shell, hl.mjs, evidence collector
 docs/DESIGN.md                     invariants, state machine, event flows, threat model
 ```
+
+## AI attribution and pre-existing work
+
+- **Built during the buildathon window**, starting 2026-11-18. No code predates it except the dependencies below.
+- **Dependencies:** Hyperlane `@hyperlane-xyz/core@12.2.0` (Apache-2.0), Reactive `reactive-lib-omni` and `forge-std` (git submodules), viem, React and Vite for the Observatory.
+- **AI in the product:** the neural scorer is a small network trained by `model/train.py` and executed on-chain inside `react()`; it can only accelerate a freeze, never clear one.
+- **AI in development:** an AI coding assistant helped write code, tests and documentation under the author's direction. Every claim about live behaviour is backed by an on-chain transaction linked in this README.
+
+## Team
+
+- **Ernest rewer** ([@s70239176-ctrl](https://github.com/s70239176-ctrl)): design, contracts, deployment, frontend.
+
+## License
+
+[MIT](LICENSE)
