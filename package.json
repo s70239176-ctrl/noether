@@ -1,0 +1,9 @@
+{
+  "name": "noether",
+  "private": true,
+  "description": "Solidity dependencies for Noether (Hyperlane contracts)",
+  "license": "MIT",
+  "dependencies": {
+    "@hyperlane-xyz/core": "12.2.0"
+  }
+}

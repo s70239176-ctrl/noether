@@ -1,0 +1,10 @@
+out/
+cache/
+broadcast/
+.env
+deployments/*.local*
+deployments/*local.env
+deployments/evidence.md
+model/__pycache__/
+node_modules/
+deployments/deploy.log

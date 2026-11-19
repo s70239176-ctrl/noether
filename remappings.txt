@@ -1,0 +1,5 @@
+forge-std/=lib/forge-std/src/
+reactive-lib/=lib/reactive-lib-omni/src/
+@hyperlane-xyz/core/=node_modules/@hyperlane-xyz/core/
+@openzeppelin/contracts/=node_modules/@hyperlane-xyz/core/dependencies/@openzeppelin-contracts-4.9.3/contracts/
+@openzeppelin/contracts-upgradeable/=node_modules/@hyperlane-xyz/core/dependencies/@openzeppelin-contracts-upgradeable-4.9.3/contracts/

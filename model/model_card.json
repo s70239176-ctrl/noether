@@ -1,0 +1,173 @@
+{
+  "name": "noether-brain-v1",
+  "architecture": "6-8-1 MLP, ReLU hidden, logistic output, int fixed point 1e6",
+  "features": [
+    "amount / EMA(lock size), cap 10x, /10",
+    "amount / backing, cap 1",
+    "recipient novel on home chain (0/1)",
+    "unbacked events in last 32 Lasna blocks / 4, cap 1",
+    "open suspects / 4, cap 1",
+    "Lasna blocks since last lock / 600, cap 1"
+  ],
+  "decision": "escalate (freeze now) iff logit >= ESCALATE_LOGIT; otherwise wait for the deterministic grace window",
+  "safety": "the model can only shorten time-to-freeze; it can never clear a suspect or lift a freeze",
+  "metrics": {
+    "seed": 7,
+    "test_samples": 8000,
+    "escalate_probability": 0.95,
+    "logit_threshold_1e6": 2944439,
+    "false_escalation_rate_on_honest": 0.0010152284263959391,
+    "escalation_rate_on_forged": 0.9736453201970443,
+    "accuracy_at_0_5": 0.993125
+  },
+  "golden": {
+    "x": [
+      [
+        38005,
+        33289,
+        1000000,
+        250000,
+        0,
+        7484
+      ],
+      [
+        187738,
+        4917,
+        0,
+        0,
+        0,
+        24705
+      ],
+      [
+        464724,
+        21303,
+        0,
+        0,
+        0,
+        4454
+      ],
+      [
+        15165,
+        16313,
+        0,
+        0,
+        0,
+        22032
+      ],
+      [
+        276941,
+        25421,
+        0,
+        0,
+        0,
+        13869
+      ],
+      [
+        92152,
+        20454,
+        0,
+        0,
+        0,
+        48
+      ],
+      [
+        134947,
+        31130,
+        0,
+        250000,
+        0,
+        1101
+      ],
+      [
+        47147,
+        52531,
+        1000000,
+        0,
+        0,
+        13247
+      ],
+      [
+        344093,
+        537339,
+        1000000,
+        250000,
+        0,
+        383400
+      ],
+      [
+        1000000,
+        72493,
+        1000000,
+        0,
+        250000,
+        77286
+      ],
+      [
+        320702,
+        454108,
+        1000000,
+        750000,
+        250000,
+        269575
+      ],
+      [
+        262458,
+        324339,
+        1000000,
+        500000,
+        250000,
+        196328
+      ],
+      [
+        250319,
+        148534,
+        1000000,
+        500000,
+        0,
+        254418
+      ],
+      [
+        472657,
+        191150,
+        1000000,
+        0,
+        0,
+        352630
+      ],
+      [
+        1000000,
+        431542,
+        1000000,
+        500000,
+        0,
+        107225
+      ],
+      [
+        396398,
+        469540,
+        1000000,
+        250000,
+        250000,
+        1000000
+      ]
+    ],
+    "logit": [
+      -6740514,
+      -9797884,
+      -8626614,
+      -9420614,
+      -9267268,
+      -9893614,
+      -9077668,
+      -6949203,
+      28696920,
+      5910405,
+      29028641,
+      21076849,
+      14810252,
+      17186329,
+      26667312,
+      43101241
+    ]
+  }
+}
