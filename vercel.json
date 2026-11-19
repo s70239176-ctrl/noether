@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "cd app && npm install --ignore-scripts --no-audit --no-fund",
+  "buildCommand": "node app/scripts/public-config.mjs && cd app && npx vite build",
+  "outputDirectory": "app/dist",
+  "functions": {
+    "api/rpc.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/config",
+      "destination": "/config.json"
+    },
+    {
+      "source": "/rpc/:chain",
+      "destination": "/api/rpc?chain=:chain"
+    },
+    {
+      "source": "/((?!api/|rpc/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

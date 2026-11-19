@@ -155,7 +155,9 @@ export function Console({ cfg, state }: { cfg: Config | null; state: LiveState |
       <h2 className="title">Run it <em>for real</em>.</h2>
       {!op && (
         <div className="watchonly">
-          Watch-only mode: this server has no operator key. Run the app locally with the project's .env to execute live scenarios.
+          Public watch-only view. Every number here is live from Base Sepolia, Unichain Sepolia and Reactive Lasna. The buttons need
+          the route's operator key, so they run from a local copy (<span className="mono">cd app &amp;&amp; npm run dev</span>); recorded runs are in{" "}
+          <a href="https://github.com/s70239176-ctrl/noether/blob/main/docs/LIVE_EVIDENCE.md" target="_blank" rel="noreferrer">LIVE_EVIDENCE.md</a>.
         </div>
       )}
       <div className="actions">
@@ -233,8 +235,13 @@ export function Incident({ cfg, events }: { cfg: Config | null; events: NEvent[]
       <div className="eyebrow"><span className="n">05</span> Incident dossier</div>
       {!inc ? (
         <div className="empty">
-          No conservation-law violation in the recent window. Forge a mint from the console and the full loop appears here: origin
-          transaction, Lasna reaction, each freeze landing, and cover payout, with seconds measured from on-chain timestamps.
+          No conservation-law violation in the last hour. When one happens, the full loop appears here: origin transaction, Lasna
+          reaction, each freeze landing and the cover payout, with seconds measured from on-chain timestamps. Recorded incidents, with
+          every transaction, are in{" "}
+          <a href="https://github.com/s70239176-ctrl/noether/blob/main/docs/LIVE_EVIDENCE.md" target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
+            LIVE_EVIDENCE.md
+          </a>
+          .
         </div>
       ) : (
         <>

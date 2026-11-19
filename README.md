@@ -1,6 +1,6 @@
 # Noether
 
-**Reactive Omni Buildathon 2026** · Tracks: *Every Second Counts* and *Reactive Meets AI* · Live observatory: [`app/`](app/) · Evidence: [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md) · Code: [github.com/s70239176-ctrl/noether](https://github.com/s70239176-ctrl/noether)
+**Reactive Omni Buildathon 2026** · Tracks: *Every Second Counts* and *Reactive Meets AI* · **Live observatory: [noether-ashy.vercel.app](https://noether-ashy.vercel.app)** · Evidence: [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md) · Code: [github.com/s70239176-ctrl/noether](https://github.com/s70239176-ctrl/noether)
 
 ![Noether Observatory: live map of Base Sepolia, Reactive Lasna and Unichain Sepolia](docs/assets/observatory.png)
 
@@ -87,6 +87,8 @@ The test harness ([test/utils/NoetherHarness.sol](test/utils/NoetherHarness.sol)
 ```bash
 cd app && npm ci && npm run dev     # http://127.0.0.1:5173
 ```
+
+**Hosted, watch-only: [noether-ashy.vercel.app](https://noether-ashy.vercel.app).** Everything is live; the buttons are disabled because the hosted site holds no key. It is the static build plus one read-only RPC proxy function (`api/rpc.js`, which refuses any write method), deployed from `vercel.json`.
 
 **Operator mode** is on when `../.env` holds the deployer key. The key stays in the local server process and never reaches the browser; actions need a same-origin request, and only one runs at a time. **Watch-only mode** (`NOETHER_OPERATOR=0`, or no key) shows everything except the buttons, which is the safe way to host it publicly. `npm run build && npm start` serves the production build.
 
@@ -255,6 +257,7 @@ Each chain keeps its own ~1 s clock, so Lasna's block can carry a timestamp a se
 
 ```
 app/                               the Observatory: live frontend + local operator server
+api/rpc.js, vercel.json            hosted watch-only deployment (read-only RPC proxy)
 src/reactive/NoetherLedger.sol     the reactive contract (Lasna)
 src/reactive/NoetherBrain*.sol     on-chain neural scorer + generated weights
 src/hyperlane/NoetherIsm.sol       Noether's guard, installed as the warp route's ISM

@@ -12,3 +12,7 @@ app/node_modules/
 app/dist/
 .claude/
 app/.probe.local.mjs
+
+.vercel
+.env*
+app/public/config.json
