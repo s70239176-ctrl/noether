@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPublicClient, http, parseEventLogs, type Abi, type Address, type Hex, type PublicClient } from "viem";
 // @ts-ignore shared JS module
-import { ledgerAbi, guardAbi, coverAbi, mailboxAbi, routerAbi, erc20Abi } from "../../shared/abi.js";
+import { ledgerAbi, guardAbi, coverAbi, mailboxAbi, routerAbi, erc20Abi, monitorAbi } from "../../shared/abi.js";
 
 export type ChainKey = "base" | "unichain" | "lasna";
 
@@ -22,6 +22,7 @@ export interface Config {
     spokeMailbox: Address;
     spokeRouter: Address;
     spokeGuard: Address;
+    monitor: Address | null;
   };
 }
 
@@ -51,6 +52,22 @@ export interface LiveState {
   policies: number;
   vaultCollateral: bigint;
   spokeSupply: bigint;
+  routes: MonitoredRoute[];
+  monitorOpen: number;
+}
+
+export interface MonitoredRoute {
+  id: number;
+  name: string;
+  chainA: number;
+  chainB: number;
+  routerA: Address;
+  routerB: Address;
+  escrowed: bigint;
+  circulating: bigint;
+  matched: number;
+  unexplained: number;
+  unbacked: number;
 }
 
 export interface NEvent {
@@ -124,7 +141,29 @@ async function readState(cfg: Config): Promise<LiveState> {
     g("unichain", c.spokeGuard, "quarantined", [cfg.attacker]),
     clients.unichain.readContract({ address: c.spokeRouter, abi: routerAbi as Abi, functionName: "totalSupply" }) as Promise<bigint>,
   ]);
+  let routes: MonitoredRoute[] = [];
+  let monitorOpen = 0;
+  if (c.monitor) {
+    const M = (fn: string, args: any[] = []) => clients.lasna.readContract({ address: c.monitor!, abi: monitorAbi as Abi, functionName: fn, args }) as Promise<any>;
+    const [count, open] = await Promise.all([M("routeCount"), M("openCount")]);
+    monitorOpen = Number(open);
+    routes = (await Promise.all(Array.from({ length: Number(count) }, (_, i) => M("route", [BigInt(i)])))).map((r: any, i: number) => ({
+      id: i,
+      name: r.name,
+      chainA: Number(r.chainA),
+      chainB: Number(r.chainB),
+      routerA: r.routerA,
+      routerB: r.routerB,
+      escrowed: r.escrowed,
+      circulating: r.circulating,
+      matched: Number(r.matched),
+      unexplained: Number(r.unexplained),
+      unbacked: Number(r.unbacked),
+    }));
+  }
   return {
+    routes,
+    monitorOpen,
     mode: Number(mode),
     locked,
     released,
@@ -169,7 +208,7 @@ function watchList(cfg: Config): Record<ChainKey, { addresses: Address[]; abi: A
       abi: [...(mailboxAbi as Abi), ...(guardAbi as Abi)] as Abi,
       filter: (l) => l.address.toLowerCase() !== c.spokeMailbox.toLowerCase() || l.topics[1]?.toLowerCase() === pad(c.spokeRouter),
     },
-    lasna: { addresses: [c.ledger], abi: ledgerAbi as Abi },
+    lasna: { addresses: c.monitor ? [c.ledger, c.monitor] : [c.ledger], abi: [...(ledgerAbi as Abi), ...(monitorAbi as Abi)] as Abi },
   };
 }
 

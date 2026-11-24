@@ -81,6 +81,7 @@ const config = {
     spokeMailbox: env.SPOKE_A_MAILBOX,
     spokeRouter: env.SPOKE_A,
     spokeGuard: env.SPOKE_A_GUARD,
+    monitor: env.MONITOR || null,
   },
 };
 

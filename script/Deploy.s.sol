@@ -11,6 +11,7 @@ import { NoetherIsm } from "../src/hyperlane/NoetherIsm.sol";
 import { NoetherHypERC20, INoetherGuardState } from "../src/hyperlane/NoetherHypERC20.sol";
 import { NoetherCover } from "../src/cover/NoetherCover.sol";
 import { NoetherLedger } from "../src/reactive/NoetherLedger.sol";
+import { NoetherMonitor } from "../src/reactive/NoetherMonitor.sol";
 import { NoetherGuarded } from "../src/guard/NoetherGuarded.sol";
 
 interface IEnroll {
@@ -162,5 +163,39 @@ contract SeedCover is NoetherConfig {
             cover.buyCover{ value: cover.premiumFor(each) }(each);
         }
         vm.stopBroadcast();
+    }
+}
+
+/// @notice Monitor mode, on Reactive Lasna: audit Hyperlane Warp Routes with zero integration.
+///         Opening balances are read on-chain by script/monitor.sh and passed in.
+contract DeployMonitor is NoetherConfig {
+    function run() external {
+        require(block.chainid == LASNA || block.chainid == 1597, "deploy the monitor on Reactive");
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(pk);
+        NoetherMonitor monitor = new NoetherMonitor{ value: vm.envOr("MONITOR_FUNDING", uint256(1 ether)) }(vm.envOr("GRACE_BLOCKS", uint256(30)));
+        // Third-party route from the Hyperlane registry (deployments/warp_routes/USDC/predicate-sepolia-basesepolia):
+        // native ETH locked on Base Sepolia (HypNative) <-> synthetic ETH on Ethereum Sepolia (HypSynthetic).
+        monitor.watchRoute(
+            "Hyperlane registry: ETH Base Sepolia <> Sepolia",
+            BASE_SEPOLIA,
+            0x1D39722592a8FaB912Aa582416F1f1b21bda2E30,
+            ETH_SEPOLIA,
+            0x79B42902Ef4D9532d9EB4c1E6e064Cd79Da87B3B,
+            vm.envUint("EXT_OPEN_ESCROW"),
+            vm.envUint("EXT_OPEN_SUPPLY")
+        );
+        // Noether's own route, for side-by-side comparison with Enforce mode.
+        monitor.watchRoute(
+            "Noether dUSD Base Sepolia <> Unichain Sepolia",
+            vm.envUint("HOME_CHAIN_ID"),
+            vm.envAddress("HOME_ROUTER"),
+            vm.envUint("SPOKE_A_CHAIN_ID"),
+            vm.envAddress("SPOKE_A"),
+            vm.envUint("OWN_OPEN_ESCROW"),
+            vm.envUint("OWN_OPEN_SUPPLY")
+        );
+        vm.stopBroadcast();
+        _record("MONITOR", address(monitor));
     }
 }

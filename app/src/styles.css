@@ -437,3 +437,21 @@ h2.title em { font-style: normal; color: var(--blue-soft); }
   .timeline li a { display: none; }
   .cta-band { padding: 56px 18px; }
 }
+
+/* ------------------------------------------------------------------ monitor mode */
+.mon-head, .mon-row { display: grid; grid-template-columns: 2.4fr 1fr 1fr 0.9fr 0.6fr 0.6fr; gap: 12px; align-items: center; padding: 14px 20px; position: relative; }
+.mon-head { font-size: 12px; color: var(--mute); border-bottom: 1px solid var(--line); }
+.mon-row { border-bottom: 1px solid var(--line); font-size: 14px; }
+.mon-row:last-child { border-bottom: 0; }
+.mon-name { font-weight: 500; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mon-tag { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line-2); color: var(--mute); }
+.mon-tag.ext { background: var(--grad); color: #fff; border-color: transparent; }
+.mon-sub { font-size: 12px; color: var(--mute); margin-top: 3px; }
+.mon-sub a { font-family: var(--mono); color: var(--blue-soft); }
+.mon-ev { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 8px; border-radius: 8px; }
+.mon-ev:hover { background: rgba(255, 255, 255, 0.03); }
+@media (max-width: 860px) {
+  .mon-head { display: none; }
+  .mon-row { grid-template-columns: 1fr 1fr; }
+  .mon-row > :first-child { grid-column: 1 / -1; }
+}

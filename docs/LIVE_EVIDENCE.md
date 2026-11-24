@@ -85,3 +85,19 @@ Every step was clicked in the Observatory's operator console: **Resolve**, then 
 - During the stall, a front-runner bought cover (policy #4, [0xecaf74…adbfc1](https://sepolia.basescan.org/tx/0xecaf74214c29311bf0e8d7cf3c98317f626f7fee38319076ca0801e4d6adbfc1)) before the hold landed. Eligibility is decided by the forged mint's origin timestamp, and the self-continuing payout loop later settled it as **excluded** (`PolicyExcluded`, then `PayoutCompleted`): [0x5ff700…72d0](https://sepolia.basescan.org/tx/0x5ff700b31231e57392586926388f6dc493889642ee33b0e07a57f49333f272d0). The second layer of the front-running defence, proven live.
 
 Takeaway: Noether's decision is made inside one reactive transaction in the same second. End-to-end time-to-freeze also includes Reactive's callback delivery, which was 1–2 s in runs 1 and 2 and 25 minutes during this testnet stall. The Observatory shows "callbacks landed n / 4" and a live wait timer, so a stall is visible instead of hidden.
+
+## Run 4: Monitor mode, 2026-11-24 (zero-integration audit)
+
+`NoetherMonitor` was deployed on Lasna at [`0xf98333e03335476B13f967244ce74dD75187D006`](https://lasna.reactscan.net/address/0xf98333e03335476B13f967244ce74dD75187D006) with a 60-block grace window, and started watching two routes:
+
+- **Third-party, from Hyperlane's registry** (`deployments/warp_routes/USDC/predicate-sepolia-basesepolia`): native ETH on Base Sepolia `0x1D39722592a8FaB912Aa582416F1f1b21bda2E30` ⇄ synthetic ETH on Ethereum Sepolia `0x79B42902Ef4D9532d9EB4c1E6e064Cd79Da87B3B`. Registered in [0x06cb…822d](https://lasna.reactscan.net/tx/0x06cba257ca37cfad8df4f08acd9f910f641ef27030f3c02b3a5f187a5096822d), with opening books read on-chain: 0.0309 ETH locked, 0.0309 ETH minted (balanced). Our attempt to send a transfer through it reverted at gas estimation with `PredicateRouterWrapper__UnauthorizedTransfer`: the route only accepts transfers through a Predicate compliance wrapper with an off-chain attestation. Nothing was sent.
+- **Noether's dUSD route**, registered in [0xb3bf…4f02](https://lasna.reactscan.net/tx/0xb3bfd86fffb90ba9ed464c7573e83e745b97a7977f12f18295cfe97436044f02).
+
+Live match on the dUSD route. The monitor uses only the routers' public events, not Noether's guard:
+
+1. 1,000 dUSD locked on Base: [0xd3db51…0bcc](https://sepolia.basescan.org/tx/0xd3db51412641a76520893963e5831ae24c3e58bd4e8f38492409826bebcc0bcc)
+2. Monitor recorded the send: [`TransferSent` 0xafc3b7…7b93](https://lasna.reactscan.net/tx/0xafc3b7a1ff0a3afeea2371901199b158c23ee443434d45c9b7fcccda0be37b93)
+3. Delivered on Unichain by `Mailbox.process`: [0xc57315…4a3b](https://sepolia.uniscan.xyz/tx/0xc5731527eafd91fab96814175dd0746dc6fca98da21668ad78e6e04d6b284a3b) (the first relay attempts failed on network timeouts; the same message was relayed once, later)
+4. Monitor matched the delivery: [`TransferMatched` 0x38a907…6200](https://lasna.reactscan.net/tx/0x38a907222432eff479f90a1ec41a4312eee84464f524f7126d62a719f4f06200)
+
+Afterwards the monitor's books (escrow 2,900 dUSD, circulating 2,003,000 ndUSD, matched 1, unexplained 0) equal the Enforce-mode ledger's (escrowed 2,900, circulating 2,003,000, mode NORMAL).

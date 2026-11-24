@@ -103,3 +103,17 @@ export function forgeMessage({ nonce, origin, sender, destination, recipient, to
 
 /** Demo attacker and the address a taint hop would go to. */
 export const ATTACKER = "0x00000000000000000000000000000000000bad01"; // lowercase: viem rejects a bad checksum
+
+export const monitorAbi = parseAbi([
+  "struct Route { string name; uint64 chainA; uint64 chainB; address routerA; address routerB; uint256 escrowed; uint256 circulating; uint64 matched; uint64 unexplained; uint64 unbacked; uint64 watchedAt; }",
+  "function routeCount() view returns (uint256)",
+  "function route(uint256 id) view returns (Route)",
+  "function openCount() view returns (uint256)",
+  "function clockOn() view returns (bool)",
+  "event RouteWatched(uint256 indexed routeId, string name, uint256 chainA, address routerA, uint256 chainB, address routerB, uint256 openEscrow, uint256 openSupply)",
+  "event TransferSent(uint256 indexed routeId, uint256 indexed fromChain, uint256 toChain, bytes32 recipient, uint256 amount, uint256 txHash)",
+  "event TransferMatched(uint256 indexed routeId, uint256 indexed onChain, bytes32 recipient, uint256 amount, uint256 txHash, uint256 escrowed, uint256 circulating)",
+  "event UnexplainedDelivery(uint256 indexed routeId, bytes32 indexed key, uint256 onChain, bytes32 recipient, uint256 amount, uint256 txHash, uint256 deadline)",
+  "event DeliveryExplained(uint256 indexed routeId, bytes32 indexed key, uint256 lasnaBlocksWaited)",
+  "event UnbackedDelivery(uint256 indexed routeId, bytes32 indexed key, uint256 onChain, bytes32 recipient, uint256 amount, uint256 originTxHash, uint256 escrowed, uint256 circulating)",
+]);

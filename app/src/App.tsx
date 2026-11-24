@@ -5,6 +5,7 @@ import { Brain, Console, CoverPanel, Incident, Seismograph } from "./components/
 import { Dashboard } from "./components/Dashboard";
 import { Benefits, Cta, Evidence, Faq, Integrations, Overview, SiteFooter, Steps } from "./components/Sections";
 import { Reveal, SectionHead, Sparkle } from "./components/ui";
+import { MonitorSection } from "./components/Monitor";
 
 const MODES = ["NORMAL", "ALERT", "BREACHED"];
 const REPO = "https://github.com/s70239176-ctrl/noether";
@@ -38,6 +39,7 @@ export function App() {
             <a href="#overview">Overview</a>
             <a href="#how">How it works</a>
             <a href="#console">Live console</a>
+            <a href="#monitor">Monitor</a>
             <a href="#evidence">Evidence</a>
             <a href="#faq">FAQ</a>
           </div>
@@ -102,6 +104,8 @@ export function App() {
           </div>
         </div>
       </section>
+
+      <MonitorSection cfg={cfg} state={state} events={events} />
 
       <Benefits />
 

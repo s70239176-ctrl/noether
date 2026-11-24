@@ -30,8 +30,9 @@ const config = {
     spokeMailbox: env.SPOKE_A_MAILBOX,
     spokeRouter: env.SPOKE_A,
     spokeGuard: env.SPOKE_A_GUARD,
+    monitor: env.MONITOR || null,
   },
 };
-for (const [k, v] of Object.entries(config.contracts)) if (!/^0x[0-9a-fA-F]{40}$/.test(v || "")) throw new Error(`bad address for ${k}`);
+for (const [k, v] of Object.entries(config.contracts)) if (k !== "monitor" && !/^0x[0-9a-fA-F]{40}$/.test(v || "")) throw new Error(`bad address for ${k}`);
 writeFileSync(join(root, "app", "public", "config.json"), JSON.stringify(config, null, 2));
 console.log("wrote app/public/config.json (watch-only)");
