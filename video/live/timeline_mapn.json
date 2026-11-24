@@ -1,0 +1,5 @@
+[
+  { "wait": 0, "until": "__mode() === 'NORMAL' && !document.querySelector('#map').innerText.includes('ROUTE FROZEN') && !document.querySelector('#map').innerText.includes('quarantined')", "timeout": 300, "label": "map fully NORMAL", "mark": "ready" },
+  { "wait": 0.5, "js": "(() => { document.getElementById('vcur').style.left = '3000px'; const e = document.querySelector('#map .observatory'); __jump(e, Math.max(10, (innerHeight - e.getBoundingClientRect().height) / 2)); return true; })()", "mark": "mapN" },
+  { "wait": 14, "mark": "end" }
+]

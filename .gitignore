@@ -16,3 +16,8 @@ app/.probe.local.mjs
 .vercel
 .env*
 app/public/config.json
+
+# demo video build products
+video/build/
+video/out/
+video/__pycache__/

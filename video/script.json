@@ -1,0 +1,349 @@
+{
+  "title": "Noether: a conservation law for cross-chain value, enforced by Reactive",
+  "voice": "en-US-AndrewNeural",
+  "rate": "+2%",
+  "headPad": 0.7,
+  "tailPad": 0.9,
+  "scenes": [
+    {
+      "id": "s01_hook",
+      "type": "card",
+      "card": "hook",
+      "say": "You bridged your savings from Base to Unichain. On Unichain, every token you hold is a promise: it's backed by collateral locked back on Base. Now imagine the bridge's key gets stolen.",
+      "sfx": [
+        [
+          "riser",
+          0.2
+        ],
+        [
+          "glitch",
+          -1.6
+        ],
+        [
+          "impact",
+          -0.6
+        ]
+      ]
+    },
+    {
+      "id": "s02_problem",
+      "type": "card",
+      "card": "incidents",
+      "say": "That's how the biggest bridge hacks in history happened. Ronin. Wormhole. Nomad. Multichain. Harmony. Well over a billion dollars. And every time, each chain saw a transaction that looked perfectly valid. No single chain can see that the books don't balance.",
+      "sfx": [
+        [
+          "tick",
+          3.0
+        ],
+        [
+          "tick",
+          3.7
+        ],
+        [
+          "tick",
+          4.4
+        ],
+        [
+          "tick",
+          5.2
+        ],
+        [
+          "tick",
+          6.0
+        ],
+        [
+          "impact",
+          -2.2
+        ]
+      ]
+    },
+    {
+      "id": "s03_law",
+      "type": "card",
+      "card": "law",
+      "say": "Meet Noether. One rule, enforced across chains: every token delivered on one chain must have been dispatched, exactly once, on the other. If that law ever breaks, the route freezes, on every chain, in about a second.",
+      "sfx": [
+        [
+          "whoosh",
+          0.1
+        ],
+        [
+          "chime",
+          1.4
+        ],
+        [
+          "freeze",
+          -3.0
+        ]
+      ]
+    },
+    {
+      "id": "s04_arch",
+      "type": "card",
+      "card": "arch",
+      "say": "Noether is a reactive contract on Reactive Network's Lasna testnet. There's no bot, no server, and no keeper. Through Reactive's system contract, it subscribes to Hyperlane's Mailbox on Base Sepolia, and to Noether's guard on Unichain Sepolia. Every matching event triggers react, which keeps a double-entry ledger keyed by Hyperlane message ID. When Noether has to act, it requests callbacks, and Reactive's callback proxies deliver them to Base and Unichain.",
+      "sfx": [
+        [
+          "ping",
+          1.0
+        ],
+        [
+          "ping",
+          2.2
+        ],
+        [
+          "ping",
+          3.4
+        ],
+        [
+          "whoosh",
+          9.5
+        ],
+        [
+          "whoosh",
+          14.0
+        ],
+        [
+          "whoosh",
+          -7.0
+        ],
+        [
+          "ping",
+          -5.5
+        ],
+        [
+          "ping",
+          -4.8
+        ]
+      ]
+    },
+    {
+      "id": "s05_resources",
+      "type": "card",
+      "card": "resources",
+      "say": "Here's exactly what we use from Reactive Omni. The system contract, to subscribe, unsubscribe and request callbacks. Dynamic subscriptions made inside react: a cron clock that only runs while something looks suspicious, and taint tracing that follows an attacker's transfers. Conditional, multi-destination callbacks, so one reaction reaches every chain. The REACT economy, at about one and a half hundredths of a REACT per reaction. And Omni's one-second blocks, which make a one-second freeze possible.",
+      "sfx": [
+        [
+          "tick",
+          2.4
+        ],
+        [
+          "tick",
+          6.5
+        ],
+        [
+          "tick",
+          14.5
+        ],
+        [
+          "tick",
+          19.5
+        ],
+        [
+          "tick",
+          25.5
+        ]
+      ]
+    },
+    {
+      "id": "s06_dashboard",
+      "type": "live",
+      "live": "dashboard",
+      "say": "This is the Noether Observatory, reading all three chains live. It shows the collateral escrowed on Base, the supply circulating on Unichain, and the health of the law between them. Below it, a live map of Hyperlane messages moving between chains, with Noether in the middle.",
+      "sfx": [
+        [
+          "whoosh",
+          0.2
+        ]
+      ]
+    },
+    {
+      "id": "s07_honest",
+      "type": "live",
+      "live": "honest",
+      "say": "First, an honest transfer. A thousand dollars of collateral is locked on Base, and Hyperlane delivers it on Unichain. Noether matches the delivery to its dispatch by message ID, and does nothing at all. That's the point.",
+      "sfx": [
+        [
+          "click",
+          1.0
+        ],
+        [
+          "ping",
+          3.5
+        ],
+        [
+          "chime",
+          -2.5
+        ]
+      ]
+    },
+    {
+      "id": "s08_attack",
+      "type": "live",
+      "live": "attack",
+      "say": "Now the bridge's relayer key is stolen. The attacker hand-builds a message and mints a million tokens, with nothing behind them. Hyperlane's real Mailbox accepts it, because the key is valid. In the same second, Noether's ledger sees a delivery with no dispatch. Its neural scorer rates it a forgery, and one reaction freezes the route on Base and Unichain, quarantines the attacker, and closes cover sales.",
+      "sfx": [
+        [
+          "click",
+          1.0
+        ],
+        [
+          "click",
+          1.6
+        ],
+        [
+          "alarm",
+          4.5
+        ],
+        [
+          "impact",
+          11.5
+        ],
+        [
+          "freeze",
+          16.0
+        ],
+        [
+          "freeze",
+          17.2
+        ]
+      ]
+    },
+    {
+      "id": "s09_dossier",
+      "type": "live",
+      "live": "dossier",
+      "say": "The incident dossier rebuilds the whole loop from on-chain timestamps: the forged delivery, Noether's decision, and each freeze landing on its chain. Then the attacker tries again, and the frozen security module rejects it.",
+      "sfx": [
+        [
+          "tick",
+          2.0
+        ],
+        [
+          "tick",
+          3.0
+        ],
+        [
+          "tick",
+          4.0
+        ],
+        [
+          "click",
+          -5.0
+        ],
+        [
+          "denied",
+          -3.2
+        ]
+      ]
+    },
+    {
+      "id": "s10_cover",
+      "type": "live",
+      "live": "cover",
+      "say": "Cover can't be front-run. Sales pause the moment something looks suspicious, and policies bought after the forged mint are excluded. Honest policyholders are paid automatically, with no claims to file: our first live run paid three policies that way. In this run, they had already been settled, so the payout is zero.",
+      "sfx": [
+        [
+          "ping",
+          1.5
+        ],
+        [
+          "chime",
+          11.0
+        ]
+      ]
+    },
+    {
+      "id": "s11_ai",
+      "type": "live",
+      "live": "scorer",
+      "say": "That scorer is a small neural network running inside react itself, with exactly the same integer weights as the model we trained. Drag the inputs, and you see the verdict react computes. It can only make Noether faster: it skips the grace window when it's confident, and it can never unfreeze anything.",
+      "sfx": [
+        [
+          "whoosh",
+          0.3
+        ],
+        [
+          "tick",
+          6.0
+        ],
+        [
+          "tick",
+          9.0
+        ],
+        [
+          "alarm_soft",
+          13.0
+        ]
+      ]
+    },
+    {
+      "id": "s12_useful",
+      "type": "card",
+      "card": "modes",
+      "say": "And you don't have to rebuild your bridge to use it. Monitor mode audits any Hyperlane route from its public events, with zero integration. It's live today, watching a third-party route from Hyperlane's registry. Enforce mode is one command: protect dot S H wraps a route's existing security and adds the freeze. We protected a stock route in about two minutes, and a forged mint on it froze Base in one second and Unichain in two.",
+      "sfx": [
+        [
+          "whoosh",
+          0.2
+        ],
+        [
+          "ping",
+          6.5
+        ],
+        [
+          "ping",
+          15.5
+        ],
+        [
+          "freeze",
+          -5.0
+        ]
+      ]
+    },
+    {
+      "id": "s13_proof",
+      "type": "card",
+      "card": "proof",
+      "say": "Everything you've seen is on-chain and linked: five live runs, forty-four tests on Hyperlane's real contracts, and measured costs. About twenty-nine REACT per thousand transfers, and four hundredths of a REACT to stop an attack.",
+      "sfx": [
+        [
+          "tick",
+          3.0
+        ],
+        [
+          "tick",
+          4.8
+        ],
+        [
+          "tick",
+          7.0
+        ],
+        [
+          "tick",
+          9.5
+        ]
+      ]
+    },
+    {
+      "id": "s14_close",
+      "type": "card",
+      "card": "close",
+      "say": "Noether. Every second counts. Every unit is accounted for.",
+      "sfx": [
+        [
+          "whoosh",
+          0.1
+        ],
+        [
+          "chime",
+          1.2
+        ],
+        [
+          "swell",
+          0.0
+        ]
+      ]
+    }
+  ]
+}
