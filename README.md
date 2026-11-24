@@ -20,7 +20,7 @@ Noether doesn't trust the bridge's security module. It audits the bridge's resul
 
 Reactive Omni Buildathon entry. Tracks: **Every Second Counts** (primary) and **Reactive Meets AI** (an on-chain neural scorer inside `react()` decides whether to skip the grace window).
 
-> **Status: live on testnet.** Deployed on Base Sepolia, Unichain Sepolia and Reactive Lasna against Hyperlane's live Mailboxes, and attacked live: a forged 1,000,000 mint through Hyperlane's real Mailbox froze both chains in **1 to 2 seconds** and paid cover in **3 seconds**, with no keeper, bot or human. See [Live evidence](#live-evidence) and [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md). 39 tests run on Hyperlane's real `Mailbox`, `TrustedRelayerIsm`, `HypERC20Collateral` and `HypERC20`.
+> **Status: live on testnet.** Deployed on Base Sepolia, Unichain Sepolia and Reactive Lasna against Hyperlane's live Mailboxes, and attacked live: a forged 1,000,000 mint through Hyperlane's real Mailbox froze both chains in **1 to 2 seconds** and paid cover in **3 seconds**, with no keeper, bot or human. See [Live evidence](#live-evidence) and [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md). 44 tests run on Hyperlane's real `Mailbox`, `TrustedRelayerIsm`, `HypERC20Collateral` and `HypERC20`.
 
 ---
 
@@ -54,9 +54,34 @@ Figures as widely reported (see the [rekt.news leaderboard](https://rekt.news/le
 
 Monitor mode is live and watching a **third-party route from Hyperlane's registry**, the ETH route between Base Sepolia and Ethereum Sepolia, with nothing installed by its owner. See [Monitor mode, live](#monitor-mode-live).
 
-**Measured cost.** Over three live incidents, two honest transfers, the payout loops and governance, the Enforce-mode ledger spent about **0.28 REACT** (4.00 → 3.72 REACT). Monitor mode needs no callbacks at all: two reactive transactions per transfer, one per side.
+**Measured cost** (from Lasna balance changes, 2026-11-24, base fee ≈ 70 gwei):
+
+| What | Cost |
+|---|---|
+| One reaction to an honest dispatch or delivery | **0.0145 REACT** |
+| One honest transfer (dispatch + delivery), Enforce or Monitor mode | **≈ 0.029 REACT** |
+| **1,000 honest transfers** | **≈ 29 REACT** |
+| A violation: the freeze reaction, 4 callbacks to 2 chains | **0.043 REACT** |
+| Destination side: every freeze, quarantine, hold and lift across three incidents | **< 0.0000021 ETH per guard, in total** |
+| Protecting a route: ledger funding + 2 guards | 0.5 REACT + 2 × 0.003 ETH (prepaid fees, not burned) |
 
 **Honest limits.** A freeze is only as fast as Reactive's callback delivery: 1–2 s in runs 1 and 2, 25 minutes during a testnet-wide stall in run 3. The scorer's false-escalation rate is 0.10% on synthetic data, and each false freeze needs governance to clear. Governance is a single key in the demo; production needs a multisig and timelock.
+
+## Protect your route in 3 steps
+
+Already run a Hyperlane Warp Route? Noether goes in front of it without a fork, without redeploying, and **without changing how it's verified**.
+
+```bash
+HOME_ROUTER=0x…  HOME_RPC=https://…  SPOKE_ROUTER=0x…  SPOKE_RPC=https://…  bash script/protect.sh
+```
+
+1. **Guards.** On each chain, [`NoetherGuardFactory`](src/protect/NoetherGuardFactory.sol) reads the router, finds the ISM it uses today (its own, or the Mailbox default), and deploys a `NoetherIsm` that **wraps exactly that ISM**. Verification stays the same; Noether only adds freeze and quarantine. The guard also forwards the read-only config calls Hyperlane's relayer makes (`validatorsAndThreshold`, `route`, …), so the hosted relayer keeps delivering.
+2. **Ledger.** A `NoetherLedger` on Lasna, subscribed to both sides of the route. Cover is optional.
+3. **Wiring.** Each guard trusts the ledger, and each router is pointed at its guard with `setInterchainSecurityModule(guard)`. If a multisig owns the routers, the script prints the exact calls to submit instead.
+
+**Done live, 2026-11-24, on a stock route.** We deployed an unmodified Hyperlane route ([`HypERC20Collateral` 0xF03b…5D8c](https://sepolia.basescan.org/address/0xF03bF46a2600e0233e5Ed96e727cd491F3125D8c) on Base Sepolia, [`HypERC20` 0x2D23…7D0A](https://sepolia.uniscan.xyz/address/0x2D23bEdD66d9E2Cce1B420B19e5DA4b1D52B7D0A) on Unichain Sepolia, secured by its own `TrustedRelayerIsm`). `protect.sh` then protected it in **about 2 minutes of network time** (guards 58 s, ledger 18 s, wiring 39 s). A forged 1,000,000 mint on it ([0xadd2…bca](https://sepolia.uniscan.xyz/tx/0xadd2b3ec6ebb03291949313169953bb16dc942f6b911b78aeeb2a72787ce3bca)) put its new ledger ([0xB8d9…216e](https://lasna.reactscan.net/address/0xB8d99c8CA86557e74A817C16Ff776cB7507D216e)) into BREACHED and froze **Base 1 s and Unichain 2 s later** ([Base freeze](https://sepolia.basescan.org/tx/0x38f5256e726f85582de3e736927e1a53d9e78136dba20bb446fb7fdae4e96f4c), [Unichain freeze](https://sepolia.uniscan.xyz/tx/0x028cd03c963713bebd973185d07588a8cbea003acfc37c6a8308c4b5decb33fd), from the guards' own origin and landing timestamps). Tests: [test/NoetherProtect.t.sol](test/NoetherProtect.t.sol).
+
+What protection can and can't do on a stock token: inbound deliveries freeze on both chains, so no more mints and no releases of collateral. Forged tokens that already exist can still move on the synthetic chain, because a stock `HypERC20` has no transfer hook, but they can't be redeemed for the vault's collateral. Noether's own `NoetherHypERC20` adds the per-account quarantine.
 
 ## Monitor mode, live
 
@@ -98,7 +123,7 @@ Add any route with `bash script/monitor.sh` (or one `watchRoute` call from the m
 
 ```bash
 git clone --recursive <this repo> && cd noether && npm ci --ignore-scripts   # Hyperlane contracts
-forge test                    # 39 tests on Hyperlane's real Mailbox / ISM / routers
+forge test                    # 44 tests on Hyperlane's real Mailbox / ISM / routers
 python model/train.py         # regenerates the neural weights bit for bit (needs numpy)
 git diff --exit-code src/reactive/NoetherBrainWeights.sol
 bash script/rehearse.sh       # full deployment on 3 local nodes with real Hyperlane Mailboxes
@@ -111,6 +136,7 @@ bash script/rehearse.sh       # full deployment on 3 local nodes with real Hyper
 | Callback authentication | `onlyNoether` in [NoetherGuarded.sol:64](src/guard/NoetherGuarded.sol:64): callback proxy **and** injected reactive-contract address |
 | The attack, end to end | `test_ForgedWhaleMintFreezesInTheSameReaction` in [test/NoetherLoop.t.sol](test/NoetherLoop.t.sol) |
 | Monitor mode on a route it never touched | [test/NoetherMonitor.t.sol](test/NoetherMonitor.t.sol) |
+| Protecting an existing stock route | [test/NoetherProtect.t.sol](test/NoetherProtect.t.sol) |
 
 The test harness ([test/utils/NoetherHarness.sol](test/utils/NoetherHarness.sol)) runs one real Hyperlane `Mailbox` per domain in a single EVM and plays three off-chain roles:
 - **Hyperlane relayer:** it calls `Mailbox.process` with the real dispatched bytes.
@@ -250,7 +276,7 @@ Every destination event records the **origin** tx hash and timestamp next to its
 | **Execution** | Live on Base Sepolia, Unichain Sepolia and Lasna; reactive transactions and the callbacks they trigger are linked in [Live evidence](#live-evidence) and reproducible from the Observatory or `script/demo.sh` |
 | **Integration** | Without Reactive there is no product: one subscriber has to see both chains' Hyperlane events, keep the ledger, and fan out freezes. Dynamic subscriptions (cron clock, taint) are created and dropped inside `react()` |
 | **Usefulness** | Targets the failure mode behind the largest bridge losses (unbacked mints and releases), on Hyperlane's own production contracts, without trusting the bridge's verifier |
-| **Craft** | 39 Foundry tests on real Hyperlane contracts, a gas cap test, bit-exact model tests, a local dress rehearsal, a live frontend, and docs that separate what's real from what's simulated |
+| **Craft** | 44 Foundry tests on real Hyperlane contracts, a gas cap test, bit-exact model tests, a local dress rehearsal, a live frontend, and docs that separate what's real from what's simulated |
 
 ## Live evidence
 
@@ -310,13 +336,15 @@ app/                               the Observatory: live frontend + local operat
 api/rpc.js, vercel.json            hosted watch-only deployment (read-only RPC proxy)
 src/reactive/NoetherLedger.sol     the reactive contract (Lasna), Enforce mode
 src/reactive/NoetherMonitor.sol    Monitor mode: audits any Hyperlane route with zero integration
+src/protect/NoetherGuardFactory.sol  Enforce mode for an existing route: guard wrapping its current ISM
+script/protect.sh                  protect an existing route in one command
 src/reactive/NoetherBrain*.sol     on-chain neural scorer + generated weights
 src/hyperlane/NoetherIsm.sol       Noether's guard, installed as the warp route's ISM
 src/hyperlane/NoetherHypERC20.sol  Hyperlane HypERC20 + quarantine hook
 src/guard/NoetherGuarded.sol       callback auth + hold / freeze / quarantine state
 src/cover/NoetherCover.sol         parametric cover with self-continuing payouts
 src/bridge/DemoUSD.sol             faucet collateral token (any ERC-20 works)
-test/                              39 tests on real Hyperlane contracts; utils/ has the loop harness
+test/                              44 tests on real Hyperlane contracts; utils/ has the loop harness
 model/                             training script and model card
 script/                            deploy scripts, deploy/demo/rehearse shell, hl.mjs, evidence collector
 docs/DESIGN.md                     invariants, state machine, event flows, threat model

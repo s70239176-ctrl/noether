@@ -227,7 +227,7 @@ export function Benefits() {
     ["0 s", "Decision time", "Noether reacts in the same second as the forged mint"],
     ["4", "Callbacks, one tx", "Base guard, cover, Unichain guard and a quarantine"],
     ["416k", "Worst-case gas", "Under Omni's 900k cap for a reactive transaction"],
-    ["39", "Tests", "On Hyperlane's real Mailbox, ISM and token routers"],
+    ["44", "Tests", "On Hyperlane's real Mailbox, ISM and token routers"],
   ];
   return (
     <section className="sec" id="benefits">

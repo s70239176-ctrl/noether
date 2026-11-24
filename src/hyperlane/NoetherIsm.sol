@@ -65,6 +65,20 @@ contract NoetherIsm is NoetherGuarded, IInterchainSecurityModule {
         emit RouterSet(router_);
     }
 
+    /// @notice Hyperlane's relayer reads the recipient ISM's configuration to build delivery metadata, e.g.
+    ///         `validatorsAndThreshold(bytes)` on multisig ISMs or `route(bytes)` on routing ISMs. Forward any such
+    ///         read to the wrapped ISM so routes keep working with the hosted relayer after Noether is installed.
+    ///         `staticcall` makes the forwarding read-only: nothing can change state through it.
+    fallback(bytes calldata data_) external returns (bytes memory) {
+        (bool ok, bytes memory ret) = address(inner).staticcall(data_);
+        if (!ok) {
+            assembly {
+                revert(add(ret, 32), mload(ret))
+            }
+        }
+        return ret;
+    }
+
     /// @inheritdoc IInterchainSecurityModule
     function moduleType() external view returns (uint8) {
         return inner.moduleType();

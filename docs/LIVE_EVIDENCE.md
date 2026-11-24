@@ -101,3 +101,19 @@ Live match on the dUSD route. The monitor uses only the routers' public events, 
 4. Monitor matched the delivery: [`TransferMatched` 0x38a907…6200](https://lasna.reactscan.net/tx/0x38a907222432eff479f90a1ec41a4312eee84464f524f7126d62a719f4f06200)
 
 Afterwards the monitor's books (escrow 2,900 dUSD, circulating 2,003,000 ndUSD, matched 1, unexplained 0) equal the Enforce-mode ledger's (escrowed 2,900, circulating 2,003,000, mode NORMAL).
+
+## Run 5: protecting an existing stock route in one command, 2026-11-24
+
+1. **A stock Hyperlane route with no Noether code** was deployed: [`HypERC20Collateral` 0xF03bF46a2600e0233e5Ed96e727cd491F3125D8c](https://sepolia.basescan.org/address/0xF03bF46a2600e0233e5Ed96e727cd491F3125D8c) on Base Sepolia ⇄ [`HypERC20` 0x2D23bEdD66d9E2Cce1B420B19e5DA4b1D52B7D0A](https://sepolia.uniscan.xyz/address/0x2D23bEdD66d9E2Cce1B420B19e5DA4b1D52B7D0A) on Unichain Sepolia, each secured by its own `TrustedRelayerIsm` (Base `0xE5f06F85d97Ca9551AAB4A7B6919d02290043437`, Unichain `0x1da5537cB1C15b45AC2461d5dccce4c6227c7dBa`).
+2. **`bash script/protect.sh`** (about 2 minutes of network time, not counting RPC retries):
+   - Guards from `NoetherGuardFactory`, each wrapping that route's own ISM: Base [`0x305fF099FEb5a878221C3C1C5DcF051B63028215`](https://sepolia.basescan.org/address/0x305fF099FEb5a878221C3C1C5DcF051B63028215), Unichain [`0x51ADAF2224f8D08F64a8cf50AB04b83997Fd9433`](https://sepolia.uniscan.xyz/address/0x51ADAF2224f8D08F64a8cf50AB04b83997Fd9433). 58 s.
+   - Ledger without cover on Lasna: [`0xB8d99c8CA86557e74A817C16Ff776cB7507D216e`](https://lasna.reactscan.net/address/0xB8d99c8CA86557e74A817C16Ff776cB7507D216e). 18 s.
+   - Wiring: guards trust the ledger, routers point at their guards. 14 s + 25 s.
+3. **Attack**: a forged 1,000,000 mint accepted by the Unichain Mailbox, [0xadd2b3…3bca](https://sepolia.uniscan.xyz/tx/0xadd2b3ec6ebb03291949313169953bb16dc942f6b911b78aeeb2a72787ce3bca).
+4. **Freeze**: the ledger went to BREACHED. [Base guard frozen](https://sepolia.basescan.org/tx/0x38f5256e726f85582de3e736927e1a53d9e78136dba20bb446fb7fdae4e96f4c) **1 s** after the origin timestamp, and [Unichain guard frozen](https://sepolia.uniscan.xyz/tx/0x028cd03c963713bebd973185d07588a8cbea003acfc37c6a8308c4b5decb33fd) **2 s** after.
+
+Notes: an earlier `protect.sh` attempt deployed one extra Base guard before an RPC timeout; it is unused. The script now retries each step.
+
+## Measured costs (2026-11-24)
+
+From balance changes on Lasna (base fee ≈ 70 gwei): 0.0145 REACT for an honest dispatch reaction, 0.0152 and 0.0140 REACT for Monitor mode's send and match, and 0.0431 REACT for the run-3 violation reaction with 4 callbacks. Destination guards spent under 0.0000021 ETH each in total, across every callback in three incidents.

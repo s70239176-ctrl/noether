@@ -182,7 +182,7 @@ contract NoetherLedger is AbstractReactive {
     // ------------------------------------------------------------------ construction
 
     /// @param home_        Collateral side of the route (Base Sepolia in the demo).
-    /// @param cover_       NoetherCover on the home chain.
+    /// @param cover_       NoetherCover on the home chain, or address(0) to run without cover.
     /// @param spokes_      Synthetic side(s) of the route (Unichain Sepolia in the demo).
     /// @param graceBlocks_ Lasna blocks a suspect may stay unexplained before it is a violation.
     constructor(Endpoint memory home_, address cover_, Endpoint[] memory spokes_, uint256 graceBlocks_) payable {
@@ -193,7 +193,8 @@ contract NoetherLedger is AbstractReactive {
 
         _subDispatch(home_);
         _sub(home_.chainId, home_.guard, INBOUND_TOPIC);
-        _sub(home_.chainId, cover_, PAYOUT_BATCH_TOPIC);
+        // address(0) would be a wildcard subscription, so a route without cover simply skips it.
+        if (cover_ != address(0)) _sub(home_.chainId, cover_, PAYOUT_BATCH_TOPIC);
         for (uint256 i = 0; i < spokes_.length; ++i) {
             _spokes.push(spokes_[i]);
             _spokeIndex[spokes_[i].chainId] = i + 1;
@@ -219,7 +220,7 @@ contract NoetherLedger is AbstractReactive {
                 _onDispatch(log_, true);
             } else if (a == _home.guard && t == INBOUND_TOPIC) {
                 _onInbound(log_, false);
-            } else if (a == cover && t == PAYOUT_BATCH_TOPIC) {
+            } else if (cover != address(0) && a == cover && t == PAYOUT_BATCH_TOPIC) {
                 _onPayoutBatch(log_);
             }
             return;
@@ -406,7 +407,7 @@ contract NoetherLedger is AbstractReactive {
             // Redemption path and cover sales pause for a few seconds; honest transfers continue.
             bytes memory holdCall = abi.encodeCall(INoetherGuard.hold, (address(0), sid, txHash, ts));
             _callback(_home.chainId, _home.guard, GUARD_GAS, holdCall);
-            _callback(_home.chainId, cover, GUARD_GAS, holdCall);
+            if (cover != address(0)) _callback(_home.chainId, cover, GUARD_GAS, holdCall);
         }
         _setClock(true);
     }
@@ -427,7 +428,7 @@ contract NoetherLedger is AbstractReactive {
             _setMode(Mode.NORMAL);
             bytes memory liftCall = abi.encodeCall(INoetherGuard.lift, (address(0), alertEpisode));
             _callback(_home.chainId, _home.guard, GUARD_GAS, liftCall);
-            _callback(_home.chainId, cover, GUARD_GAS, liftCall);
+            if (cover != address(0)) _callback(_home.chainId, cover, GUARD_GAS, liftCall);
             _setClock(false);
         }
     }
@@ -457,7 +458,7 @@ contract NoetherLedger is AbstractReactive {
         // One reaction, every destination: home guard, cover pool and each spoke guard.
         bytes memory freezeCall = abi.encodeCall(INoetherGuard.freeze, (address(0), id, reason, txHash, ts));
         _callback(_home.chainId, _home.guard, GUARD_GAS, freezeCall);
-        _callback(_home.chainId, cover, GUARD_GAS, freezeCall);
+        if (cover != address(0)) _callback(_home.chainId, cover, GUARD_GAS, freezeCall);
         for (uint256 i = 0; i < _spokes.length; ++i) {
             _callback(_spokes[i].chainId, _spokes[i].guard, GUARD_GAS, freezeCall);
         }
