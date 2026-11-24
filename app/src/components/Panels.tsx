@@ -1,7 +1,7 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ActionLine, ActionName, ChainKey, Config, LiveState, NEvent } from "../lib/noether";
 import { runAction } from "../lib/noether";
-import { ago, eth, short, tok, txUrl, addrUrl, CHAIN_LABEL } from "../lib/format";
+import { ago, eth, short, tok, txUrl, CHAIN_LABEL } from "../lib/format";
 import { forward, FEATURE_NAMES, W1n, W2n } from "../lib/brain";
 // @ts-ignore shared JS module
 import { REASONS } from "../../shared/abi.js";
@@ -9,107 +9,6 @@ import { REASONS } from "../../shared/abi.js";
 const chainOf = (id: any): ChainKey => (Number(id) === 84532 ? "base" : Number(id) === 1301 ? "unichain" : "lasna");
 const hex32 = (v: any) => ("0x" + BigInt(v).toString(16).padStart(64, "0")) as `0x${string}`;
 const msgAmount = (m: string) => (m && m.length >= 2 + 141 * 2 ? BigInt("0x" + m.slice(2 + 109 * 2, 2 + 141 * 2)) : 0n);
-
-// ------------------------------------------------------------------ The Law
-
-export function LawPanel({ state }: { state: LiveState | null }) {
-  const gap = state && state.circulating > state.escrowed ? state.circulating - state.escrowed : 0n;
-  const bad = !!state && state.mode === 2;
-  // After governance resolves an incident, the forged supply still exists on-chain: show it, but as history.
-  const legacy = !!state && state.mode !== 2 && gap > 0n;
-  return (
-    <div className="panel law">
-      <div className="eyebrow"><span className="n">01</span> The law</div>
-      <h1>
-        Value is <em>conserved</em> across chains, or the route freezes.
-      </h1>
-      <p className="lede">
-        Every token delivered on one chain must have been dispatched, exactly once, on the other. No single chain can check that.
-        Noether reads both halves of a live Hyperlane route from Reactive Lasna and enforces it in about a second.
-      </p>
-      <div className="equation">
-        <div className="eq-row">
-          <div className="eq-side">
-            <div className="lbl">circulating on Unichain</div>
-            <div className="val c-uni">{tok(state?.circulating)}</div>
-            <div className="sub">Σ minted − Σ burned</div>
-          </div>
-          <div className={`eq-op ${bad || legacy ? "bad" : ""}`} style={legacy && !bad ? { animation: "none", opacity: 0.7 } : undefined}>{bad || legacy ? "≰" : "≤"}</div>
-          <div className="eq-side">
-            <div className="lbl">escrowed on Base</div>
-            <div className="val c-base">{tok(state?.escrowed)}</div>
-            <div className="sub">Σ locked − Σ released</div>
-          </div>
-        </div>
-        <div className="eq-verdict">
-          {!state ? (
-            <span className="tag">connecting to three chains…</span>
-          ) : bad ? (
-            <>
-              <span className="tag bad">LAW BROKEN</span>
-              {gap > 0n && <span className="tag bad">{tok(gap)} unbacked</span>}
-              <span className="mute">route frozen until governance resolves</span>
-            </>
-          ) : state.mode === 1 ? (
-            <span className="tag warn">suspect inside the grace window</span>
-          ) : legacy ? (
-            <>
-              <span className="tag ok">watching · new deliveries matched by message id</span>
-              <span className="tag warn">{tok(gap)} unbacked from resolved incidents</span>
-            </>
-          ) : (
-            <span className="tag ok">law holds · every delivery matched by message id</span>
-          )}
-        </div>
-      </div>
-      <div className="statline">
-        <div className="stat"><div className="k">locked</div><div className="v">{tok(state?.locked)}</div></div>
-        <div className="stat"><div className="k">released</div><div className="v">{tok(state?.released)}</div></div>
-        <div className="stat"><div className="k">minted</div><div className="v">{tok(state?.minted)}</div></div>
-        <div className="stat"><div className="k">burned</div><div className="v">{tok(state?.burned)}</div></div>
-      </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------ Ladder
-
-export function Ladder({ state, events }: { state: LiveState | null; events: NEvent[] }) {
-  const lastBreak = [...events].reverse().find((e) => e.name === "ConservationBroken");
-  const neural = state?.mode === 2 && lastBreak && Number(lastBreak.args.reason) === 7;
-  const on = (i: number) =>
-    i === 0 ? state?.mode === 0 : i === 1 ? state?.mode === 1 : i === 2 ? !!neural : state?.mode === 2;
-  const rungs = [
-    ["Normal", "Every Inbound matched to its Dispatch by Hyperlane message id. Zero callbacks, no clock."],
-    ["Suspect", "Delivery with no dispatch yet: quarantine, hold redemptions and cover sales, subscribe Cron1."],
-    ["Neural", "6-8-1 network inside react() rates the suspect; at p ≥ 0.95 it skips the grace window."],
-    ["Violation", "Freeze every chain, quarantine and trace the attacker, pay cover. Only governance unfreezes."],
-  ];
-  return (
-    <div className="panel">
-      <div className="eyebrow"><span className="n">03</span> Response ladder · live</div>
-      <div className="ladder">
-        {rungs.map(([n, d], i) => (
-          <div key={n} className={`rung s${i} ${on(i) ? "on" : ""}`}>
-            <div className="num">0{i + 1}</div>
-            <div className="name">{n}</div>
-            <div className="desc">{d}</div>
-          </div>
-        ))}
-      </div>
-      <div className="clockline">
-        <span className={`tag ${state?.clockOn ? "warn" : ""}`}>
-          <span className="dot" style={{ color: state?.clockOn ? "var(--warn)" : "var(--faint)" }} />
-          Cron1 {state?.clockOn ? "subscribed: grace clock ticking" : "unsubscribed (only while suspicious)"}
-        </span>
-        <span className="tag">grace {state?.grace ?? "–"} Lasna blocks</span>
-        <span className="tag">open suspects {state?.openSuspects ?? "–"}</span>
-        <span className={`tag ${state?.tainted ? "bad" : ""}`}>taint subscriptions {state?.tainted ?? "–"}</span>
-        <span className="tag">incidents {state?.incidents ?? "–"}</span>
-      </div>
-    </div>
-  );
-}
 
 // ------------------------------------------------------------------ Operator console
 
@@ -152,7 +51,6 @@ export function Console({ cfg, state }: { cfg: Config | null; state: LiveState |
   return (
     <div className="panel">
       <div className="eyebrow"><span className="n">04</span> Operator console · live testnet</div>
-      <h2 className="title">Run it <em>for real</em>.</h2>
       {!op && (
         <div className="watchonly">
           Public watch-only view. Every number here is live from Base Sepolia, Unichain Sepolia and Reactive Lasna. The buttons need
@@ -324,29 +222,29 @@ export function Brain({ events }: { events: NEvent[] }) {
         {W1n.map((row: number[], i: number) =>
           row.map((w: number, j: number) => {
             const a = pos(0, i, 6), b = pos(1, j, 8);
-            return <line key={`a${i}${j}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={w > 0 ? "#5be4ff" : "#ff4fc3"} strokeOpacity={Math.min(0.85, Math.abs(w) / 5) * (0.25 + x[i])} strokeWidth={0.6 + Math.min(2.2, Math.abs(w) / 2)} />;
+            return <line key={`a${i}${j}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={w > 0 ? "#4d9dff" : "#ff6b7d"} strokeOpacity={Math.min(0.85, Math.abs(w) / 5) * (0.25 + x[i])} strokeWidth={0.6 + Math.min(2.2, Math.abs(w) / 2)} />;
           }),
         )}
         {W2n.map((w: number, j: number) => {
           const a = pos(1, j, 8), b = pos(2, 0, 1);
-          return <line key={`b${j}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={w > 0 ? "#5be4ff" : "#ff4fc3"} strokeOpacity={Math.min(0.9, 0.15 + out.hidden[j] / 3)} strokeWidth={0.8 + Math.min(2.5, Math.abs(w) / 2)} />;
+          return <line key={`b${j}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={w > 0 ? "#4d9dff" : "#ff6b7d"} strokeOpacity={Math.min(0.9, 0.15 + out.hidden[j] / 3)} strokeWidth={0.8 + Math.min(2.5, Math.abs(w) / 2)} />;
         })}
         {x.map((v, i) => {
           const p = pos(0, i, 6);
-          return <circle key={`i${i}`} cx={p.x} cy={p.y} r={9} fill={`rgba(160,139,255,${0.15 + v * 0.85})`} stroke="#a08bff" />;
+          return <circle key={`i${i}`} cx={p.x} cy={p.y} r={9} fill={`rgba(77,157,255,${0.15 + v * 0.85})`} stroke="#c9dcff" />;
         })}
         {out.hidden.map((h, j) => {
           const p = pos(1, j, 8);
-          return <circle key={`h${j}`} cx={p.x} cy={p.y} r={8} fill={`rgba(91,228,255,${Math.min(1, 0.1 + h / 3)})`} stroke="#5be4ff" />;
+          return <circle key={`h${j}`} cx={p.x} cy={p.y} r={8} fill={`rgba(138,184,255,${Math.min(1, 0.1 + h / 3)})`} stroke="#4d9dff" />;
         })}
         {(() => {
           const p = pos(2, 0, 1);
-          const c = out.escalate ? "#ff4d5e" : out.p > 0.5 ? "#ffb547" : "#6cf2b0";
+          const c = out.escalate ? "#ff4d5e" : out.p > 0.5 ? "#ffb547" : "#3ddc97";
           return (
             <g>
               <circle cx={p.x} cy={p.y} r={24} fill={c} opacity="0.22" />
               <circle cx={p.x} cy={p.y} r={15} fill={c} />
-              <text x={p.x} y={p.y + 44} textAnchor="middle" fontFamily="JetBrains Mono" fontSize="12" fill="#f4efe6">p = {out.p.toFixed(3)}</text>
+              <text x={p.x} y={p.y + 44} textAnchor="middle" fontFamily="IBM Plex Mono" fontSize="12" fill="#ffffff">p = {out.p.toFixed(3)}</text>
             </g>
           );
         })()}
@@ -490,7 +388,7 @@ function describe(e: NEvent): [string, string] {
 }
 
 const LANES: ChainKey[] = ["base", "lasna", "unichain"];
-const LANE_COLOR: Record<ChainKey, string> = { base: "#4a82ff", lasna: "#a08bff", unichain: "#ff4fc3" };
+const LANE_COLOR: Record<ChainKey, string> = { base: "#2086ff", lasna: "#c9dcff", unichain: "#8ab8ff" };
 
 export function Seismograph({ cfg, events }: { cfg: Config | null; events: NEvent[] }) {
   const [now, setNow] = useState(Date.now() / 1000);
@@ -510,16 +408,16 @@ export function Seismograph({ cfg, events }: { cfg: Config | null; events: NEven
         {LANES.map((l, i) => (
           <g key={l}>
             <line x1="90" x2="880" y1={40 + i * 55} y2={40 + i * 55} stroke="rgba(255,255,255,0.08)" />
-            <text x="0" y={44 + i * 55} fontFamily="JetBrains Mono" fontSize="11" fill={LANE_COLOR[l]}>{l === "lasna" ? "LASNA" : l === "base" ? "BASE" : "UNICHAIN"}</text>
+            <text x="0" y={44 + i * 55} fontFamily="IBM Plex Mono" fontSize="11" fill={LANE_COLOR[l]}>{l === "lasna" ? "LASNA" : l === "base" ? "BASE" : "UNICHAIN"}</text>
           </g>
         ))}
         {[0, 10, 20, 30].map((m) => (
-          <text key={m} x={X(now - m * 60)} y="186" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="10" fill="#5a5768">{m === 0 ? "now" : `−${m}m`}</text>
+          <text key={m} x={X(now - m * 60)} y="186" textAnchor="middle" fontFamily="IBM Plex Mono" fontSize="10" fill="rgba(255,255,255,0.4)">{m === 0 ? "now" : `−${m}m`}</text>
         ))}
         {timed.filter((e) => e.ts! >= x0).map((e) => {
           const y = 40 + LANES.indexOf(e.chain) * 55;
           const [, cls] = describe(e);
-          const col = cls === "breach" ? "#ff4d5e" : cls === "warn" ? "#ffb547" : cls === "ok" ? "#6cf2b0" : LANE_COLOR[e.chain];
+          const col = cls === "breach" ? "#ff4d5e" : cls === "warn" ? "#ffb547" : cls === "ok" ? "#3ddc97" : LANE_COLOR[e.chain];
           const big = e.name === "ConservationBroken" || e.name === "GuardFrozen";
           return (
             <a key={e.key} href={txUrl(cfg, e.chain, e.tx)} target="_blank" rel="noreferrer">
@@ -543,51 +441,6 @@ export function Seismograph({ cfg, events }: { cfg: Config | null; events: NEven
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------ Footer
-
-export function Footer({ cfg }: { cfg: Config | null }) {
-  if (!cfg) return null;
-  const c = cfg.contracts;
-  const rows: [string, ChainKey, string][] = [
-    ["NoetherLedger (reactive contract)", "lasna", c.ledger],
-    ["Hyperlane Mailbox", "base", c.homeMailbox],
-    ["HypERC20Collateral (warp route)", "base", c.homeRouter],
-    ["NoetherIsm guard", "base", c.homeGuard],
-    ["NoetherCover", "base", c.cover],
-    ["Hyperlane Mailbox", "unichain", c.spokeMailbox],
-    ["NoetherHypERC20 (warp route)", "unichain", c.spokeRouter],
-    ["NoetherIsm guard", "unichain", c.spokeGuard],
-  ];
-  return (
-    <div className="foot">
-      <div className="panel">
-        <div className="eyebrow"><span className="n">09</span> Live contracts</div>
-        <div className="addr">
-          {rows.map(([n, ch, a]) => (
-            <Fragment key={n + ch}>
-              <span>{n} <span className="faint">· {CHAIN_LABEL[ch]}</span></span>
-              <a href={addrUrl(cfg, ch, a)} target="_blank" rel="noreferrer">{short(a, 8, 6)} ↗</a>
-            </Fragment>
-          ))}
-        </div>
-      </div>
-      <div className="panel">
-        <div className="eyebrow"><span className="n">10</span> Recorded on 2026-11-19</div>
-        <div style={{ fontSize: 13.5, color: "var(--ink-2)" }}>
-          A forged 1,000,000 mint froze both chains in 1–2 s and paid cover in 3 s; a forged collateral drain froze Base in 1 s and
-          its copycat was rejected.
-        </div>
-        <div className="addr" style={{ marginTop: 12 }}>
-          <span>Forged mint · Unichain</span><a href="https://sepolia.uniscan.xyz/tx/0x4a58c335d50882d1b80f25d8ca582b093ffda76e1170359a8481fae431e8d5d4" target="_blank" rel="noreferrer">0x4a58c3…d5d4 ↗</a>
-          <span>Noether reaction · Lasna</span><a href="https://lasna.reactscan.net/tx/0xeb4b319520edcad88bae85da1f5be342c626d55d10b535d2ea0e5bf8831ce2c9" target="_blank" rel="noreferrer">0xeb4b31…c2c9 ↗</a>
-          <span>Base frozen · +1 s</span><a href="https://sepolia.basescan.org/tx/0x20e528ef0e88a08bd0dd0463b89401ab7f537fa8d34a3b15e5b5a477ca73432b" target="_blank" rel="noreferrer">0x20e528…432b ↗</a>
-          <span>Cover paid · +3 s</span><a href="https://sepolia.basescan.org/tx/0xf15f0190a54492c248ea7522ad217407837f3d4071a80bab554fba6036dbeaad" target="_blank" rel="noreferrer">0xf15f01…eaad ↗</a>
-        </div>
       </div>
     </div>
   );

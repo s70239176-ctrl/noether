@@ -18,7 +18,7 @@ const PATHS: Record<string, string> = {
   l2u: "M 490 244 Q 588 312 686 322",
 };
 
-const COLORS = { base: "#4a82ff", uni: "#ff4fc3", lasna: "#a08bff", cyan: "#5be4ff", breach: "#ff4d5e", ok: "#6cf2b0", warn: "#ffb547" };
+const COLORS = { base: "#2086ff", uni: "#8ab8ff", lasna: "#c9dcff", cyan: "#5ec8ff", breach: "#ff4d5e", ok: "#3ddc97", warn: "#ffb547" };
 
 function hexagon(cx: number, cy: number, r: number) {
   return Array.from({ length: 6 }, (_, i) => {
@@ -124,31 +124,31 @@ export function Observatory({ state, events, attacker }: { state: LiveState | nu
 
   const mode = state?.mode ?? 0;
   const breached = mode === 2;
-  const coreColor = breached ? COLORS.breach : mode === 1 ? COLORS.warn : COLORS.lasna;
+  const coreColor = breached ? COLORS.breach : mode === 1 ? COLORS.warn : "#4d9dff";
 
   return (
     <svg viewBox="0 0 900 560" role="img" aria-label="Live map of Base Sepolia, Reactive Lasna and Unichain Sepolia">
       <defs>
         <radialGradient id="gBase" cx="35%" cy="30%" r="75%">
-          <stop offset="0%" stopColor="#bcd0ff" />
-          <stop offset="35%" stopColor="#4a82ff" />
-          <stop offset="100%" stopColor="#0b1a4a" />
+          <stop offset="0%" stopColor="#cfe2ff" />
+          <stop offset="35%" stopColor="#2086ff" />
+          <stop offset="100%" stopColor="#061a45" />
         </radialGradient>
         <radialGradient id="gUni" cx="35%" cy="30%" r="75%">
-          <stop offset="0%" stopColor="#ffd0f0" />
-          <stop offset="35%" stopColor="#ff4fc3" />
-          <stop offset="100%" stopColor="#4a0b37" />
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="35%" stopColor="#8ab8ff" />
+          <stop offset="100%" stopColor="#14305e" />
         </radialGradient>
         <radialGradient id="gCore" cx="40%" cy="35%" r="70%">
           <stop offset="0%" stopColor="#ffffff" />
           <stop offset="30%" stopColor={coreColor} />
-          <stop offset="100%" stopColor="#120d2a" />
+          <stop offset="100%" stopColor="#0a1638" />
         </radialGradient>
         <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="14" />
         </filter>
         <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
-          <path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(255,255,255,0.035)" strokeWidth="1" />
+          <path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(138,184,255,0.05)" strokeWidth="1" />
         </pattern>
       </defs>
 
@@ -162,7 +162,7 @@ export function Observatory({ state, events, attacker }: { state: LiveState | nu
       {/* Hyperlane route */}
       <path d={PATHS.bridge} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
       <path d={PATHS.bridge} fill="none" stroke="url(#gBase)" strokeWidth="1.5" className="flow" opacity="0.6" />
-      <text x="450" y="498" textAnchor="middle" className="planet-label" fill="#8b8799">
+      <text x="450" y="498" textAnchor="middle" className="planet-label" fill="rgba(255,255,255,0.5)">
         HYPERLANE WARP ROUTE · Mailbox v3
       </text>
 
@@ -225,10 +225,10 @@ export function Observatory({ state, events, attacker }: { state: LiveState | nu
         <ellipse cx={P.lasna.x} cy={P.lasna.y} rx={P.lasna.r + 22} ry={P.lasna.r + 22} fill="none" stroke={COLORS.lasna} strokeOpacity="0.35" strokeWidth="1" strokeDasharray="1 7" />
       </g>
       <circle cx={P.lasna.x} cy={P.lasna.y} r={P.lasna.r} fill="url(#gCore)" />
-      <text x={P.lasna.x} y={P.lasna.y + 7} textAnchor="middle" fontFamily="Instrument Serif" fontStyle="italic" fontSize="24" fill="#0b0716">
+      <text x={P.lasna.x} y={P.lasna.y + 7} textAnchor="middle" fontFamily="Inter" fontWeight="600" fontSize="19" fill="#06102a">
         Noether
       </text>
-      <text x={P.lasna.x} y={70} textAnchor="middle" className="planet-label" fill="#8b8799">
+      <text x={P.lasna.x} y={70} textAnchor="middle" className="planet-label" fill="rgba(255,255,255,0.5)">
         REACTIVE LASNA · react() ledger
       </text>
       <text x={P.lasna.x} y={P.lasna.y + 96} textAnchor="middle" className="planet-val" fill={coreColor}>
