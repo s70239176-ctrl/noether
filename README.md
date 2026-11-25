@@ -20,7 +20,7 @@ Noether doesn't trust the bridge's security module. It audits the bridge's resul
 
 Reactive Omni Buildathon entry. Tracks: **Every Second Counts** (primary) and **Reactive Meets AI** (an on-chain neural scorer inside `react()` decides whether to skip the grace window).
 
-> **Status: live on testnet.** Deployed on Base Sepolia, Unichain Sepolia and Reactive Lasna against Hyperlane's live Mailboxes, and attacked live: a forged 1,000,000 mint through Hyperlane's real Mailbox froze both chains in **1 to 2 seconds** and paid cover in **3 seconds**, with no keeper, bot or human. See [Live evidence](#live-evidence) and [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md). 44 tests run on Hyperlane's real `Mailbox`, `TrustedRelayerIsm`, `HypERC20Collateral` and `HypERC20`.
+> **Status: live on testnet, benchmarked.** Deployed on Base Sepolia, Unichain Sepolia and Reactive Lasna against Hyperlane's live Mailboxes. Over **26 forged mints** through Hyperlane's real Mailbox, Noether froze **both routes in 26/26** at **+2 s p50, +3 s p95** (block timestamps). It also rejected **26/26 copycats** and froze **0 of 39 honest transfers** by mistake, with no keeper, bot or human ([benchmark](deployments/bench/BENCH.md)). **Judging? Start at [docs/JUDGE.md](docs/JUDGE.md)**: one attack in six links, no wallet needed. See [Live evidence](#live-evidence) and [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md). 44 tests run on Hyperlane's real `Mailbox`, `TrustedRelayerIsm`, `HypERC20Collateral` and `HypERC20`.
 
 ---
 
@@ -280,6 +280,23 @@ Every destination event records the **origin** tx hash and timestamp next to its
 
 ## Live evidence
 
+### Benchmark: 26 attacks, 39 honest transfers (2026-11-25)
+
+26 forged mints through Hyperlane's real Mailbox on 2026-11-25, interleaved with 39 honest transfers, on the live testnets. Latency is measured from block timestamps, relative to the forged mint's block.
+
+| Result | |
+|---|---|
+| Forged mints that froze **both** routes | **26 / 26** |
+| Both routes frozen | **+2 s p50 · +3 s p95** (Base +1 s p50, Unichain +2 s p50) |
+| Noether's decision on Lasna | same second as the forged mint (p95 +0 s) |
+| Callbacks per reaction | 4 every time (Base guard, cover, Unichain guard, quarantine) |
+| Copycat forged messages rejected by the frozen route | **26 / 26** |
+| Honest transfers frozen by mistake | **0 / 39** (39/39 matched by message id, 0 suspects raised) |
+
+Every run with its transactions: [deployments/bench/BENCH.md](deployments/bench/BENCH.md). Reproduce with `node app/scripts/bench.mjs 25` against the operator server.
+
+### First recorded incidents (2026-11-19)
+
 Recorded 2026-11-19 and rebuilt from raw chain logs by `script/evidence.mjs`. Full record with every address: [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md).
 
 **Scenario 1: compromised relayer key forges a 1,000,000 ndUSD mint on Unichain** (`bash script/demo.sh attack`)
@@ -319,6 +336,7 @@ Each chain keeps its own ~1 s clock, so Lasna's block can carry a timestamp a se
 - **The route is ours; Hyperlane's contracts and Mailboxes are real.** Noether integrates with any warp route whose owner installs `NoetherIsm` as the route's ISM. The synthetic token's one extra hook (quarantine, no bridging out while frozen) is the only Hyperlane-side change.
 - **The relayer in the demo is the deployer** (TrustedRelayerIsm), and `script/demo.sh` relays honest transfers itself. With a multisig ISM, Hyperlane's public relayer would deliver instead; Noether is unchanged.
 - **Hyperlane domain ids equal chain ids** on these testnets (84532, 1301); the ledger relies on that.
+- **Timers never count Base Sepolia blocks.** Base Sepolia now makes a block every 200 ms, so its block numbers are no clock. Every block-count timer in Noether (the grace window, the burst window and the scorer's "blocks since last lock" feature) runs inside the reactive contracts on Lasna and counts Lasna's ~1 s blocks. The guards and the cover pool on Base and Unichain use `block.timestamp` only.
 - **Reactive specifics**, checked against the docs and source on 2026-11-18:
   - The system contract is at `0x8888…8888`.
   - Cron events still come from the legacy `0x…fffFfF`.

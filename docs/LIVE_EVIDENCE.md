@@ -2,6 +2,21 @@
 
 Recorded 2026-11-19 on Base Sepolia, Unichain Sepolia and Reactive Lasna. Everything below was regenerated from raw chain logs by `script/evidence.mjs`; nothing comes from the demo script's own clock.
 
+## Benchmark (2026-11-25)
+
+26 forged mints through Hyperlane's real Mailbox on 2026-11-25, interleaved with 39 honest transfers, on the live testnets. Latency is measured from block timestamps, relative to the forged mint's block.
+
+| Result | |
+|---|---|
+| Forged mints that froze **both** routes | **26 / 26** |
+| Both routes frozen | **+2 s p50 · +3 s p95** (Base +1 s p50, Unichain +2 s p50) |
+| Noether's decision on Lasna | same second as the forged mint (p95 +0 s) |
+| Callbacks per reaction | 4 every time (Base guard, cover, Unichain guard, quarantine) |
+| Copycat forged messages rejected by the frozen route | **26 / 26** |
+| Honest transfers frozen by mistake | **0 / 39** (39/39 matched by message id, 0 suspects raised) |
+
+Every run, with links to each transaction: [deployments/bench/BENCH.md](../deployments/bench/BENCH.md).
+
 ## Deployed contracts
 
 | Contract | Chain | Address |
