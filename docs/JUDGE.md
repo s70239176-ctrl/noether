@@ -4,7 +4,7 @@ No wallet needed. Every claim below is an on-chain transaction you can open.
 
 ## 1. Watch it (2 minutes)
 
-The demo video shows an uncut live attack on the testnets: a forged 1,000,000 mint accepted by Hyperlane's real Mailbox, the ledger flipping to BREACHED, and all four freeze callbacks landing. A page-rendered UTC clock runs throughout.
+**[Demo video on YouTube](https://youtu.be/gzgNm0AnIUc)** shows an uncut live attack on the testnets: a forged 1,000,000 mint accepted by Hyperlane's real Mailbox, the ledger flipping to BREACHED, and all four freeze callbacks landing. A page-rendered UTC clock runs throughout.
 
 ## 2. Follow one attack through the full loop (six links)
 

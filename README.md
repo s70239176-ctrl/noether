@@ -1,6 +1,6 @@
 # Noether
 
-**Reactive Omni Buildathon 2026** · Tracks: *Every Second Counts* and *Reactive Meets AI* · **Live observatory: [noether-ashy.vercel.app](https://noether-ashy.vercel.app)** · Evidence: [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md) · Code: [github.com/s70239176-ctrl/noether](https://github.com/s70239176-ctrl/noether)
+**Reactive Omni Buildathon 2026** · Tracks: *Every Second Counts* and *Reactive Meets AI* · **Demo video (2 min): [youtu.be/gzgNm0AnIUc](https://youtu.be/gzgNm0AnIUc)** · **Live observatory: [noether-ashy.vercel.app](https://noether-ashy.vercel.app)** · Evidence: [docs/LIVE_EVIDENCE.md](docs/LIVE_EVIDENCE.md) · Code: [github.com/s70239176-ctrl/noether](https://github.com/s70239176-ctrl/noether)
 
 ![Noether Observatory: live map of Base Sepolia, Reactive Lasna and Unichain Sepolia](docs/assets/observatory.png)
 

@@ -3,6 +3,8 @@
 > **Every token delivered on one chain must have been dispatched, exactly once, on the other.**
 > When that law breaks, Noether freezes the route on every chain, live on testnet in about 2 seconds, with no bot, server or keeper.
 
+**Demo video (2 min, uncut live attack):** https://youtu.be/gzgNm0AnIUc
+
 **Live Observatory:** https://noether-ashy.vercel.app · **Code:** https://github.com/s70239176-ctrl/noether · **On-chain evidence:** [LIVE_EVIDENCE.md](https://github.com/s70239176-ctrl/noether/blob/main/docs/LIVE_EVIDENCE.md)
 
 Tracks: **Every Second Counts** (primary) and **Reactive Meets AI**
@@ -102,7 +104,7 @@ The worst-case `react()` (violation, 2 spokes, taint, neural pass) measures **~4
 ### Hackathon requirements
 
 - **Live on Reactive testnet** with real cross-chain callbacks. Every reaction and callback is an on-chain transaction, linked in [LIVE_EVIDENCE.md](https://github.com/s70239176-ctrl/noether/blob/main/docs/LIVE_EVIDENCE.md).
-- **Demo video:** 2 minutes, including an uncut live attack on the testnets.
+- **Demo video:** https://youtu.be/gzgNm0AnIUc (2 minutes, including an uncut live attack on the testnets).
 - **Open source:** MIT licensed, with a deploy guide, a 5-minute verification path, and an honest "what's real vs simulated" table in the README.
 - **Built during the buildathon window**, starting 2026-11-18. An AI coding assistant helped write code, tests and docs under the author's direction; every live claim is backed by a linked transaction.
 
