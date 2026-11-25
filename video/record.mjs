@@ -19,7 +19,7 @@ const FF =
 const [url, out, secArg, timelineArg] = process.argv.slice(2);
 const seconds = Number(secArg || 10);
 const timeline = timelineArg ? JSON.parse(readFileSync(timelineArg, "utf8")) : [];
-const W = 1920, H = 1080;
+const W = Number(process.env.RW || 1920), H = Number(process.env.RH || 1080);
 
 const bin = [
   process.env.BROWSER,
@@ -31,7 +31,7 @@ const port = 9300 + Math.floor(Math.random() * 500);
 // ZOOM=1.333 lays the page out at 1440x810 CSS pixels and captures it at 1920x1080.
 const ZOOM = Number(process.env.ZOOM || 1);
 const proc = spawn(bin, [
-  ...(process.env.HEADED ? ["--window-position=-2600,0", "--disable-features=CalculateNativeWinOcclusion",
+  ...(process.env.HEADED ? [`--window-position=${process.env.WINPOS || "-2600,0"}`, "--disable-features=CalculateNativeWinOcclusion",
     "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding", "--no-first-run", "--no-default-browser-check"] : ["--headless=new"]),
   "--hide-scrollbars", "--force-color-profile=srgb", "--autoplay-policy=no-user-gesture-required",
   `--remote-debugging-port=${port}`, `--user-data-dir=${mkdtempSync(join(tmpdir(), "noether-rec-"))}`,

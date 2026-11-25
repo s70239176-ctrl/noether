@@ -26,27 +26,33 @@ dur = json.loads((B / "durations.json").read_text())
 subs = json.loads((B / "subs.json").read_text(encoding="utf-8"))
 HEAD, TAIL = script["headPad"], script["tailPad"]
 
-# Live scenes: segments of the real testnet recordings, as (source, mark, offset, length, stamp_since). length None runs
-# to the end of the recording. stamp_since adds a "T+n s" real-time stamp, counted from that mark, so a viewer always
-# knows how much real time has passed wherever footage was cut (e.g. while Hyperlane's relayer delivers).
+# Live scenes: segments of the real testnet recordings, as (source, mark, offset, length, stamp_since, crop). length
+# None runs to the end mark in SEG_END (or the end of the recording). stamp_since adds a real-time stamp counted from
+# that mark. crop (x, y, w, h, in output pixels) punches in on part of the page, e.g. the incident dossier.
+# The attack is one uncut real-time take: its segments are contiguous, the punch-in is a reframe, not a time cut.
 SOURCES = {  # recording -> the marks where the timeline jumped to a new section (used to calibrate render lag)
-    "live": ["s06_dash", "s06_map", "s07_console", "s07_dash", "s08_console", "s08_dash", "s08_map", "s09_dossier", "s10_cover", "s11_scorer"],
-    "map": ["mapB", "console"],
-    "mapn": ["mapN"],
+    "live2": ["console", "map"],
 }
+DOSSIER = (440, 80, 1480, 833)
+CONSOLE = (60, 100, 1480, 833)
 LIVE = {
-    "s06_dashboard": {"tag": "LIVE  ·  Base Sepolia  ·  Unichain Sepolia  ·  Reactive Lasna",
-                      "segs": [("live", "s07_dash", 0.4, 8.6, None), ("mapn", "mapN", 0.8, 8.8, None)]},
-    "s07_honest": {"tag": "LIVE  ·  honest transfer of 1,000 dUSD, Base to Unichain",
-                   "segs": [("live", "s07_click", -1.2, 6.2, "s07_click"), ("live", "s07_delivered", -2.5, 8.6, "s07_click")]},
-    "s08_attack": {"tag": "LIVE  ·  forged 1,000,000 mint with a stolen relayer key",
-                   "segs": [("live", "s08_arm", -1.0, None, "s08_fire"), ("live", "s08_dash", 0.4, 6.0, "s08_fire"), ("map", "mapB", 0.8, 7.0, None)]},
-    "s09_dossier": {"tag": "LIVE  ·  incident dossier, rebuilt from on-chain timestamps",
-                    "segs": [("live", "s09_dossier", 0.4, 6.5, None), ("live", "s09_copycat", -1.5, 7.0, None)]},
-    "s10_cover": {"tag": "LIVE  ·  cover pool on Base Sepolia", "segs": [("live", "s10_cover", 0.4, 13.4, None)]},
-    "s11_ai": {"tag": "LIVE  ·  the neural scorer, same integer weights as react()", "segs": [("live", "s11_honest", -1.5, None, None)]},
+    "s03_honest": {"tag": "LIVE  ·  honest transfer of 1,000 dUSD, Base to Unichain", "stamp": "since send",
+                   "segs": [("live2", "honest_click", -2.6, None, "honest_click", None)]},
+    "s04_attack": {"tag": "LIVE  ·  forged 1,000,000 mint with a stolen relayer key  ·  one uncut take", "stamp": "since forged mint",
+                   "ledger": "breached",
+                   "segs": [("live2", "attack_start", 0.0, None, "fire", None), ("live2", "accepted", 3.0, None, "fire", CONSOLE)]},
+    "s05_dossier": {"tag": "LIVE  ·  the same take, continued  ·  incident dossier", "stamp": "since forged mint", "ledger": "",
+                    "segs": [("live2", "landed", 0.9, None, "fire", DOSSIER), ("live2", "copycat", -0.3, None, "fire", CONSOLE),
+                             ("live2", "map", 0.7, 3.4, None, None)]},
 }
-SEG_END = {("live", "s08_arm"): ("s08_breached", 2.5)}  # the attack shot runs until the ledger has flipped
+SEG_END = {  # (source, start mark) -> (end mark, offset)
+    ("live2", "honest_click"): ("attack_start", -0.2),
+    ("live2", "attack_start"): ("accepted", 3.0),
+    ("live2", "accepted"): ("landed", 0.9),
+    ("live2", "landed"): ("copycat", -0.3),
+    ("live2", "copycat"): ("map", -0.15),
+}
+MARK_TIMES: dict = {}  # scene -> {mark: seconds into the scene}, for sound cues like ["impact", "@breached"]
 
 
 def run(args: list[str], cwd=None) -> None:
@@ -124,7 +130,7 @@ def live_clip(sid: str, out: pathlib.Path) -> None:
     L = scene_length(sid)
     names = list(dict.fromkeys(seg[0] for seg in spec["segs"]))
     windows = []
-    for src, mark, off, ln, since in spec["segs"]:
+    for src, mark, off, ln, since, crop in spec["segs"]:
         S = source(src)
         start = S.v(S.marks[mark] + off)
         if (src, mark) in SEG_END:
@@ -133,31 +139,55 @@ def live_clip(sid: str, out: pathlib.Path) -> None:
         if ln is None:
             ln = S.length - start - 0.3
         stamp0 = (S.marks[mark] + off) - S.marks[since] if since else None
-        windows.append((names.index(src), start, min(ln, S.length - start), stamp0))
+        windows.append((names.index(src), start, min(ln, S.length - start), stamp0, crop, src))
     total = sum(w[2] for w in windows)
     speed = min(max(total / L, 0.66), 2.2)
     print(f"  {sid}: {len(windows)} segments, {total:.1f}s of footage -> {L:.1f}s (x{speed:.2f})")
     tag = text_file(f"{sid}_tag.txt", spec["tag"])
+    # where each recorded mark lands in this scene's output time
+    times, cum = {}, 0.0
+    for _, st, ln, _, _, src in windows:
+        S = source(src)
+        for m, t in S.marks.items():
+            vm = S.v(t)
+            if st <= vm < st + ln and m not in times:
+                times[m] = (cum + vm - st) / speed
+        cum += ln
+    MARK_TIMES[sid] = times
+    ledger = ""
+    if "ledger" in spec:  # the ledger state the page showed (mode chip), flipping at the moment it was recorded
+        flip = times.get(spec["ledger"]) if spec["ledger"] else None
+        on = text_file("ledger_on.txt", "LEDGER   BREACHED")
+        off = text_file("ledger_off.txt", "LEDGER   NORMAL")
+        common = f"fontfile='{FONT}':x=74:y=134:fontsize=28:fontcolor=white:boxborderw=14:box=1"
+        if flip is None:
+            ledger = f"drawtext={common}:textfile='{on}':boxcolor=0xd8304a@0.95,"
+        else:
+            ledger = (f"drawtext={common}:textfile='{off}':boxcolor=0x1f9e6a@0.95:enable='lt(t\\,{flip:.2f})',"
+                      f"drawtext={common}:textfile='{on}':boxcolor=0xd8304a@0.95:enable='gte(t\\,{flip:.2f})',")
     fc, parts = [], []
     for k in range(len(names)):
         idx = [i for i, w in enumerate(windows) if w[0] == k]
         fc.append(f"[{k}:v]split={len(idx)}" + "".join(f"[r{i}]" for i in idx))
-    for i, (_, s, ln, stamp0) in enumerate(windows):
-        z = 0.045
-        chain = (f"[r{i}]trim=start={s:.3f}:duration={ln:.3f},setpts=PTS-STARTPTS,tmix=frames=5:weights='1 2 3 2 1',"
-                 f"scale=w='trunc(1920*(1+{z}*t/{ln:.3f})/2)*2':h=-2:eval=frame:flags=bicubic,crop=1920:1080,setsar=1")
+    for i, (_, s, ln, stamp0, crop, _src) in enumerate(windows):
+        z = 0.035
+        chain = f"[r{i}]trim=start={s:.3f}:duration={ln:.3f},setpts=PTS-STARTPTS,tmix=frames=5:weights='1 2 3 2 1'"
+        if crop:
+            x, y, w, h = crop
+            chain += f",crop={w}:{h}:{x}:{y},scale=1920:1080:flags=lanczos"
+        chain += f",scale=w='trunc(1920*(1+{z}*t/{ln:.3f})/2)*2':h=-2:eval=frame:flags=bicubic,crop=1920:1080,setsar=1"
         if stamp0 is not None:
-            stamp = "T+%{eif\\:max(0\\," + f"t+{stamp0:.2f}" + ")\\:d} s"
-            chain += (f",drawtext=fontfile='{FONT}':text='{stamp}':x=w-tw-60:y=60:fontsize=32:"
-                      f"fontcolor=white:box=1:boxcolor=0x2086ff@0.9:boxborderw=14")
+            stamp = spec["stamp"] + "  +%{eif\\:max(0\\," + f"t+{stamp0:.2f}" + ")\\:d} s"
+            chain += (f",drawtext=fontfile='{FONT}':text='{stamp}':x=w-tw-60:y=60:fontsize=30:"
+                      f"fontcolor=white:box=1:boxcolor=0x2086ff@0.92:boxborderw=14")
         chain += f"[p{i}]"
         fc.append(chain)
         parts.append(f"[p{i}]")
     fc.append("".join(parts) + f"concat=n={len(parts)}:v=1:a=0,setpts=PTS/{speed:.4f},fps={FPS},"
               f"tpad=stop_mode=clone:stop_duration=6,trim=duration={L:.3f},setpts=PTS-STARTPTS,"
               f"drawtext=fontfile='{FONT}':textfile='{tag}':x=74:y=60:fontsize=30:fontcolor=white:box=1:boxcolor=0x01040e@0.8:boxborderw=16,"
-              f"drawbox=x=44:y=44:w=10:h=66:color=0xff4d5e@1:t=fill,"
-              f"fade=t=in:st=0:d=0.25,fade=t=out:st={L - 0.25:.3f}:d=0.25,format=yuv420p[v]")
+              f"drawbox=x=44:y=44:w=10:h=66:color=0xff4d5e@1:t=fill,{ledger}"
+              f"fade=t=in:st=0:d=0.2,fade=t=out:st={L - 0.2:.3f}:d=0.2,format=yuv420p[v]")
     fcs = B / "txt" / f"{sid}.fc"
     fcs.write_text(";\n".join(fc), encoding="utf-8")
     inputs = []
@@ -244,7 +274,7 @@ def main() -> None:
         out = scenes_dir / f"{sid}.mp4"
         print(sid)
         import os
-        keep = os.environ.get("REUSE") and out.exists() and sid not in os.environ.get("REBUILD", "").split(",")
+        keep = os.environ.get("REUSE") and sc["type"] == "card" and out.exists() and sid not in os.environ.get("REBUILD", "").split(",")
         if keep:  # REUSE=1 REBUILD=a,b re-renders only the listed scenes
             pass
         elif sc["type"] == "card":
@@ -269,7 +299,13 @@ def main() -> None:
         end = starts[sid] + scene_length(sid)
         for name, at in sc.get("sfx", []):
             w = sfx_cache.setdefault(name, audio.SFX[name]())
-            fx.append((starts[sid] + HEAD + at if at >= 0 else end + at, w))
+            if isinstance(at, str):
+                if at[1:] not in MARK_TIMES.get(sid, {}):
+                    print(f"  (no mark {at} in {sid}, cue skipped)")
+                    continue
+                fx.append((starts[sid] + MARK_TIMES[sid][at[1:]], w))
+            else:
+                fx.append((starts[sid] + HEAD + at if at >= 0 else end + at, w))
     print(f"mixing {total:.1f}s of audio")
     mixed = audio.mix(total, vo, fx)
     wav_out = B / "mix.wav"

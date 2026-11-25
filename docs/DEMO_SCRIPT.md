@@ -1,6 +1,6 @@
 # Demo video script (about 3 minutes, user first)
 
-The finished demo video (4.3 minutes, with voice-over, captions and live testnet footage) is generated from source by the pipeline in [`video/`](../video/README.md); its scene-by-scene narration is in [`video/script.json`](../video/script.json). The table below is the shorter version to record by hand.
+The finished demo video (2 minutes, with voice-over, captions and an uncut live attack on the testnets) is generated from source by the pipeline in [`video/`](../video/README.md); its scene-by-scene narration is in [`video/script.json`](../video/script.json). The table below is the shorter version to record by hand.
 
 Lead with the person whose money is at risk, then show the mechanism. Every shot uses the real testnets and the Observatory.
 
